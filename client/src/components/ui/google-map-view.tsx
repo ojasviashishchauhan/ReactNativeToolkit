@@ -100,9 +100,9 @@ export function GoogleMapView({
   const mapCenter = userLocation || defaultLocation;
 
   // Access the Google Maps API key from environment secrets
-  const googleMapsApiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: googleMapsApiKey || '',
+    googleMapsApiKey: googleMapsApiKey,
     id: 'google-map-script'
   });
 
