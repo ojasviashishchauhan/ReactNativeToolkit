@@ -7,8 +7,8 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { X } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { X, MapPin, Lock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -235,6 +235,9 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Create New Activity</DialogTitle>
+          <DialogDescription>
+            Fill out the details to create a new activity for others to join
+          </DialogDescription>
           <button 
             className="absolute right-4 top-4 text-gray-500 hover:text-gray-700" 
             onClick={onClose}
@@ -378,26 +381,30 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
               )}
             />
             
-            <div className="relative z-0">
+            <div className="relative">
               <FormLabel>Location</FormLabel>
-              <div 
-                id="location-picker-map"
-                className="h-40 bg-blue-100 rounded-lg mb-2 relative"
-                style={{ width: '100%' }}
-              >
-                {!mapInstance && (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    <p className="text-center">
-                      <i className="fas fa-map-pin text-2xl mb-2"></i><br/>
-                      Map Location Picker<br/>
-                      <span className="text-xs">(Click to select location)</span>
-                    </p>
-                  </div>
-                )}
+              <div className="h-40 overflow-hidden rounded-lg mb-2">
+                <div 
+                  id="location-picker-map"
+                  className="h-40 bg-blue-100 rounded-lg relative"
+                  style={{ width: '100%' }}
+                >
+                  {!mapInstance && (
+                    <div className="h-full flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <MapPin className="h-6 w-6 mx-auto mb-2" />
+                        <span>Map Location Picker</span><br/>
+                        <span className="text-xs">(Click to select location)</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="text-sm text-gray-500 flex items-center">
-                <i className="fas fa-lock mr-1"></i> 
-                Exact location will be shared only with approved participants
+                <span className="flex items-center">
+                  <Lock className="h-4 w-4 mr-1" /> 
+                  Exact location will be shared only with approved participants
+                </span>
               </div>
             </div>
             

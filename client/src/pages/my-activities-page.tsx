@@ -62,11 +62,10 @@ export default function MyActivitiesPage() {
     setShowChatModal(true);
   };
 
-  // Format date helper
-  const formatDate = (dateString: string | Date) => {
+  // Helper to check if date is in the past
+  const isDateInPast = (dateString: string | Date) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' at ' + 
-      date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date < new Date();
   };
 
   // Filtering activities based on active tab
@@ -93,13 +92,6 @@ export default function MyActivitiesPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm p-4">
           <h1 className="text-xl font-bold">My Activities</h1>
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mt-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="hosting">Hosting</TabsTrigger>
-              <TabsTrigger value="participating">Participating</TabsTrigger>
-            </TabsList>
-          </Tabs>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -108,56 +100,64 @@ export default function MyActivitiesPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="space-y-4">
-              <TabsContent value="all" className="mt-0 space-y-4">
-                {filteredActivities.all.length > 0 ? (
-                  filteredActivities.all.map((activity) => (
-                    <ActivityCard 
-                      key={activity.id}
-                      activity={activity}
-                      user={user}
-                      onOpenChat={handleOpenChat}
-                      onParticipantAction={handleParticipantAction}
-                    />
-                  ))
-                ) : (
-                  <EmptyState />
-                )}
-              </TabsContent>
+            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="hosting">Hosting</TabsTrigger>
+                <TabsTrigger value="participating">Participating</TabsTrigger>
+              </TabsList>
+              
+              <div className="space-y-4">
+                <TabsContent value="all" className="mt-0 space-y-4">
+                  {filteredActivities.all.length > 0 ? (
+                    filteredActivities.all.map((activity) => (
+                      <ActivityCard 
+                        key={activity.id}
+                        activity={activity}
+                        user={user}
+                        onOpenChat={handleOpenChat}
+                        onParticipantAction={handleParticipantAction}
+                      />
+                    ))
+                  ) : (
+                    <EmptyState />
+                  )}
+                </TabsContent>
 
-              <TabsContent value="hosting" className="mt-0 space-y-4">
-                {filteredActivities.hosting.length > 0 ? (
-                  filteredActivities.hosting.map((activity) => (
-                    <ActivityCard 
-                      key={activity.id}
-                      activity={activity}
-                      user={user}
-                      onOpenChat={handleOpenChat}
-                      onParticipantAction={handleParticipantAction}
-                      showRequests={true}
-                    />
-                  ))
-                ) : (
-                  <EmptyState type="hosting" />
-                )}
-              </TabsContent>
+                <TabsContent value="hosting" className="mt-0 space-y-4">
+                  {filteredActivities.hosting.length > 0 ? (
+                    filteredActivities.hosting.map((activity) => (
+                      <ActivityCard 
+                        key={activity.id}
+                        activity={activity}
+                        user={user}
+                        onOpenChat={handleOpenChat}
+                        onParticipantAction={handleParticipantAction}
+                        showRequests={true}
+                      />
+                    ))
+                  ) : (
+                    <EmptyState type="hosting" />
+                  )}
+                </TabsContent>
 
-              <TabsContent value="participating" className="mt-0 space-y-4">
-                {filteredActivities.participating.length > 0 ? (
-                  filteredActivities.participating.map((activity) => (
-                    <ActivityCard 
-                      key={activity.id}
-                      activity={activity}
-                      user={user}
-                      onOpenChat={handleOpenChat}
-                      onParticipantAction={handleParticipantAction}
-                    />
-                  ))
-                ) : (
-                  <EmptyState type="participating" />
-                )}
-              </TabsContent>
-            </div>
+                <TabsContent value="participating" className="mt-0 space-y-4">
+                  {filteredActivities.participating.length > 0 ? (
+                    filteredActivities.participating.map((activity) => (
+                      <ActivityCard 
+                        key={activity.id}
+                        activity={activity}
+                        user={user}
+                        onOpenChat={handleOpenChat}
+                        onParticipantAction={handleParticipantAction}
+                      />
+                    ))
+                  ) : (
+                    <EmptyState type="participating" />
+                  )}
+                </TabsContent>
+              </div>
+            </Tabs>
           )}
         </div>
 
@@ -214,7 +214,7 @@ function ActivityCard({
             <div className="mt-2 space-y-1 text-sm text-gray-600">
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2 text-primary" />
-                <span>{formatDate(activity.dateTime)}</span>
+                <span>{new Date(activity.dateTime).toLocaleDateString()} at {new Date(activity.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
               <div className="flex items-center">
                 <MapPin className="h-4 w-4 mr-2 text-primary" />
