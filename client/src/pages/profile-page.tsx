@@ -174,6 +174,36 @@ export default function ProfilePage() {
                     value={avatarUrl || ""}
                     onChange={(e) => setAvatarUrl(e.target.value)}
                   />
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <Label htmlFor="age" className="block text-left mb-1">Age</Label>
+                      <Input
+                        id="age"
+                        type="number"
+                        placeholder="Your age"
+                        value={age || ""}
+                        onChange={(e) => setAge(e.target.value ? parseInt(e.target.value) : undefined)}
+                        min={18}
+                        max={120}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sex" className="block text-left mb-1">Sex</Label>
+                      <select
+                        id="sex"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={sex}
+                        onChange={(e) => setSex(e.target.value)}
+                      >
+                        <option value="">Prefer not to say</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  
                   <Textarea
                     placeholder="Tell us about yourself..."
                     value={bio || ""}
