@@ -23,7 +23,7 @@ export function Sidebar({ user }: SidebarProps) {
           <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
             <i className="fas fa-users text-white text-lg"></i>
           </div>
-          <h1 className="text-xl font-bold text-gray-800">ActivityHub</h1>
+          <h1 className="text-xl font-bold text-gray-800">Connect</h1>
         </div>
       </div>
 
@@ -62,11 +62,19 @@ export function Sidebar({ user }: SidebarProps) {
       {user && (
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3">
-            <img 
-              src={user.avatarUrl || "https://via.placeholder.com/100"} 
-              alt={`${user.username}'s avatar`} 
-              className="w-10 h-10 rounded-full object-cover" 
-            />
+            {user.avatarUrl ? (
+              <img 
+                src={user.avatarUrl} 
+                alt={`${user.username}'s avatar`} 
+                className="w-10 h-10 rounded-full object-cover" 
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-primary font-semibold text-lg">
+                  {user.username.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
             <div className="flex-1">
               <p className="font-medium text-gray-800">{user.username}</p>
               <div className="flex items-center text-xs text-gray-600">
