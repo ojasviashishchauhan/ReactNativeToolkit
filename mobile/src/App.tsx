@@ -1,9 +1,10 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // Import screens
 import HomeScreen from './screens/HomeScreen';
@@ -98,12 +99,23 @@ const RootNavigator = () => {
   );
 };
 
+// Main app stack with themed navigation
+const AppWithTheme = () => {
+  const { isDark } = useTheme();
+  
+  return (
+    <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme}>
+      <RootNavigator />
+    </NavigationContainer>
+  );
+};
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
+      <ThemeProvider>
+        <AppWithTheme />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
