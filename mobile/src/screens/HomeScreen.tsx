@@ -8,7 +8,8 @@ import {
   Image,
   FlatList,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -149,7 +150,7 @@ const HomeScreen = () => {
   const fetchRecommendations = async () => {
     // Simulating API call
     setTimeout(() => {
-      const mockRecommendations = [
+      const mockRecommendations: Recommendation[] = [
         {
           id: 6,
           title: 'Hiking Trip to Bear Mountain',
@@ -164,9 +165,9 @@ const HomeScreen = () => {
         },
         {
           id: 8,
-          title: 'Beginner's Pottery Class',
+          title: 'Beginner Pottery Class',
           type: 'Arts',
-          reason: 'Similar to activities you've joined before',
+          reason: 'Similar to activities you joined before',
         },
       ];
       

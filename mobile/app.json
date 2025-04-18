@@ -9,37 +9,73 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2E7CF6"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.connect.app"
+      "bundleIdentifier": "com.connect.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Connect needs your location to show you nearby activities and display them on the map.",
+        "NSCameraUsageDescription": "Connect needs camera access to let you upload profile pictures and activity photos.",
+        "NSPhotoLibraryUsageDescription": "Connect needs access to your photo library to let you select profile pictures and activity photos.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
+      },
+      "config": {
+        "googleMapsApiKey": "${GOOGLE_MAPS_API_KEY}"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2E7CF6"
       },
       "package": "com.connect.app",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+          "apiKey": "${GOOGLE_MAPS_API_KEY}"
         }
       }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Connect to use your location to find nearby activities and show them on the map."
+          "locationWhenInUsePermission": "Connect needs your location to show you nearby activities and display them on the map.",
+          "locationAlwaysAndWhenInUsePermission": "Connect needs background location access to notify you about activities happening near you."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Connect needs camera access to let you upload profile pictures and activity photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Connect needs access to your photo library to let you select profile pictures and activity photos."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "connect-app"
+      }
+    }
   }
 }
