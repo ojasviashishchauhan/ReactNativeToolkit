@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Welcome to Activity Hub",
+        title: "Welcome to Connect",
         description: `Logged in as ${user.username}`,
         duration: 3000,
       });
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Account created!",
-        description: `Welcome to ActivityHub, ${user.username}!`,
+        description: `Welcome to Connect, ${user.username}!`,
         duration: 3000,
       });
     },

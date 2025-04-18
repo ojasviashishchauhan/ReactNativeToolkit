@@ -166,9 +166,23 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
         form.setValue("longitude", position.lng);
         form.setValue("exactLatitude", position.lat);
         form.setValue("exactLongitude", position.lng);
+        
+        // Get address from coordinates using reverse geocoding
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}&zoom=18`, {
+          headers: { 'Accept-Language': 'en' }
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.display_name) {
+              form.setValue("address", data.display_name);
+            }
+          })
+          .catch(error => {
+            console.error("Error with reverse geocoding:", error);
+          });
       });
       
-      // Allow clicking on map to move marker
+      // Allow clicking on map to move marker and get address
       map.on('click', function(e: any) {
         marker.setLatLng(e.latlng);
         setMapLocation({
@@ -179,6 +193,20 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
         form.setValue("longitude", e.latlng.lng);
         form.setValue("exactLatitude", e.latlng.lat);
         form.setValue("exactLongitude", e.latlng.lng);
+        
+        // Get address from coordinates using reverse geocoding
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&zoom=18`, {
+          headers: { 'Accept-Language': 'en' }
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.display_name) {
+              form.setValue("address", data.display_name);
+            }
+          })
+          .catch(error => {
+            console.error("Error with reverse geocoding:", error);
+          });
       });
       
       // Ensure map displays correctly

@@ -101,24 +101,25 @@ export function MapView({
 
     const userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
 
-    // Add search radius circle if enabled
-    if (showRadiusCircle) {
-      // Remove existing circle if any
-      if (radiusCircle) {
-        map.removeLayer(radiusCircle);
-      }
-      
-      // Create new circle
-      const circle = L.circle([userLocation.lat, userLocation.lng], {
-        radius: searchRadius * 1000, // Convert km to meters
-        color: '#4F46E5',
-        fillColor: '#4F46E5',
-        fillOpacity: 0.1,
-        weight: 2
-      }).addTo(map);
-      
-      setRadiusCircle(circle);
+    // Always show search radius circle
+    // Remove existing circle if any
+    if (radiusCircle) {
+      map.removeLayer(radiusCircle);
     }
+    
+    // Create new circle
+    const circle = L.circle([userLocation.lat, userLocation.lng], {
+      radius: searchRadius * 1000, // Convert km to meters
+      color: '#4F46E5',
+      fillColor: '#4F46E5',
+      fillOpacity: 0.1,
+      weight: 2
+    }).addTo(map);
+    
+    setRadiusCircle(circle);
+    
+    // Set showRadiusCircle to true to always display the control
+    setShowRadiusCircle(true);
 
     return () => {
       map.removeLayer(userMarker);
@@ -126,7 +127,7 @@ export function MapView({
         map.removeLayer(radiusCircle);
       }
     };
-  }, [map, userLocation, searchRadius, showRadiusCircle]);
+  }, [map, userLocation, searchRadius]);
 
   // Update activity markers when activities change
   useEffect(() => {
