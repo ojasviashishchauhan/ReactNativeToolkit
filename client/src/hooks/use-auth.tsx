@@ -43,8 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Welcome back!",
-        description: `You're now logged in as ${user.username}`,
+        title: "Welcome to Activity Hub",
+        description: `Logged in as ${user.username}`,
+        duration: 3000,
       });
     },
     onError: (error: Error) => {
@@ -66,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Account created!",
         description: `Welcome to ActivityHub, ${user.username}!`,
+        duration: 3000,
       });
     },
     onError: (error: Error) => {
@@ -86,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Logged out",
         description: "You've been successfully logged out",
+        duration: 3000,
       });
     },
     onError: (error: Error) => {

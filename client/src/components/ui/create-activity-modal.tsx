@@ -73,105 +73,121 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
     },
   });
 
-  // Effect to initialize map when modal opens
+  // Effect to load map script if not already loaded
   useEffect(() => {
-    // Cleanup function to handle map destruction
-    let mapToDestroy: any = null;
-    
-    const initMap = () => {
-      if (!isOpen || !userLocation) return;
-      
-      // Wait for DOM to be ready
-      setTimeout(() => {
-        // Check if map is already initialized
-        if (mapInstance) {
-          mapInstance.invalidateSize();
-          return;
-        }
+    if (!window.L && isOpen) {
+      // Check if Leaflet is already being loaded
+      const existingScript = document.getElementById('leaflet-script');
+      if (!existingScript) {
+        // Create script element to load Leaflet
+        const script = document.createElement('script');
+        script.id = 'leaflet-script';
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+        script.crossOrigin = '';
+        script.async = true;
         
-        // Check if Leaflet is loaded
-        if (!window.L) {
-          console.log("Leaflet is not loaded yet");
-          return;
-        }
+        // Also load the CSS
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+        link.crossOrigin = '';
         
-        const L = window.L;
-        
-        // Get map container
-        const mapContainer = document.getElementById('location-picker-map');
-        
-        if (!mapContainer) {
-          console.log("Map container not found");
-          return;
-        }
-        
-        // Create map instance
-        const map = L.map(mapContainer, {
-          zoomControl: false,
-          attributionControl: false
-        }).setView([userLocation.lat, userLocation.lng], 15);
-        
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-        
-        // Add zoom control in a better position
-        L.control.zoom({
-          position: 'bottomright'
-        }).addTo(map);
-        
-        // Add marker for selected location
-        const marker = L.marker([userLocation.lat, userLocation.lng], {
-          draggable: true
-        }).addTo(map);
-        
-        // Update form when marker is dragged
-        marker.on('dragend', function() {
-          const position = marker.getLatLng();
-          setMapLocation({
-            lat: position.lat,
-            lng: position.lng
-          });
-          form.setValue("latitude", position.lat);
-          form.setValue("longitude", position.lng);
-          form.setValue("exactLatitude", position.lat);
-          form.setValue("exactLongitude", position.lng);
-        });
-        
-        // Allow clicking on map to move marker
-        map.on('click', function(e: any) {
-          marker.setLatLng(e.latlng);
-          setMapLocation({
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
-          });
-          form.setValue("latitude", e.latlng.lat);
-          form.setValue("longitude", e.latlng.lng);
-          form.setValue("exactLatitude", e.latlng.lat);
-          form.setValue("exactLongitude", e.latlng.lng);
-        });
-        
-        // Force a recalculation of the map's size
-        setTimeout(() => {
-          map.invalidateSize();
-        }, 100);
-        
-        setMapInstance(map);
-        mapToDestroy = map;
-      }, 100);
-    };
-    
-    // Initialize map when modal opens
-    if (isOpen) {
-      initMap();
+        document.head.appendChild(link);
+        document.body.appendChild(script);
+      }
     }
+  }, [isOpen]);
+  
+  // Effect to initialize map when modal opens and Leaflet is loaded
+  useEffect(() => {
+    if (!isOpen || !userLocation) return;
+    
+    // Wait a bit for the DOM to be ready after the modal opens
+    const initMapTimer = setTimeout(() => {
+      // Check if Leaflet is loaded
+      if (!window.L) {
+        console.log("Leaflet not loaded yet, waiting...");
+        return; // Try again on next render cycle
+      }
+      
+      const L = window.L;
+      
+      // Get map container
+      const mapContainer = document.getElementById('location-picker-map');
+      if (!mapContainer) {
+        console.log("Map container not found");
+        return;
+      }
+      
+      // If a map instance already exists, just recalculate size
+      if (mapInstance) {
+        mapInstance.invalidateSize();
+        return;
+      }
+      
+      // Create map instance
+      const map = L.map(mapContainer, {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([userLocation.lat, userLocation.lng], 15);
+      
+      // Add OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      
+      // Add zoom control in a better position
+      L.control.zoom({
+        position: 'bottomright'
+      }).addTo(map);
+      
+      // Add marker for selected location
+      const marker = L.marker([userLocation.lat, userLocation.lng], {
+        draggable: true
+      }).addTo(map);
+      
+      // Update form when marker is dragged
+      marker.on('dragend', function() {
+        const position = marker.getLatLng();
+        setMapLocation({
+          lat: position.lat,
+          lng: position.lng
+        });
+        form.setValue("latitude", position.lat);
+        form.setValue("longitude", position.lng);
+        form.setValue("exactLatitude", position.lat);
+        form.setValue("exactLongitude", position.lng);
+      });
+      
+      // Allow clicking on map to move marker
+      map.on('click', function(e: any) {
+        marker.setLatLng(e.latlng);
+        setMapLocation({
+          lat: e.latlng.lat,
+          lng: e.latlng.lng
+        });
+        form.setValue("latitude", e.latlng.lat);
+        form.setValue("longitude", e.latlng.lng);
+        form.setValue("exactLatitude", e.latlng.lat);
+        form.setValue("exactLongitude", e.latlng.lng);
+      });
+      
+      // Ensure map displays correctly
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 250);
+      
+      setMapInstance(map);
+    }, 300); // Delay initialization to make sure modal is fully rendered
     
     // Cleanup function
     return () => {
-      if (mapToDestroy) {
-        mapToDestroy.remove();
+      clearTimeout(initMapTimer);
+      if (mapInstance) {
+        mapInstance.remove();
         setMapInstance(null);
       }
     };
@@ -213,6 +229,7 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
       toast({
         title: "Activity Created",
         description: "Your activity has been created successfully",
+        duration: 3000,
       });
       onClose();
       form.reset();
@@ -392,7 +409,9 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
                   {!mapInstance && (
                     <div className="h-full flex items-center justify-center text-gray-500">
                       <div className="text-center">
-                        <MapPin className="h-6 w-6 mx-auto mb-2" />
+                        <div className="flex justify-center mb-2">
+                          <MapPin className="h-6 w-6" />
+                        </div>
                         <span>Map Location Picker</span><br/>
                         <span className="text-xs">(Click to select location)</span>
                       </div>
@@ -401,10 +420,12 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
                 </div>
               </div>
               <div className="text-sm text-gray-500 flex items-center">
-                <span className="flex items-center">
-                  <Lock className="h-4 w-4 mr-1" /> 
-                  Exact location will be shared only with approved participants
-                </span>
+                <div className="flex items-center">
+                  <div className="mr-1">
+                    <Lock size={16} />
+                  </div>
+                  <span>Exact location will be shared only with approved participants</span>
+                </div>
               </div>
             </div>
             
