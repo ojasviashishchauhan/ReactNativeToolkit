@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024px" height="1024px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Connect App Icon</title>
+    <g id="Icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect fill="#121212" x="0" y="0" width="1024" height="1024" rx="230"></rect>
+        <circle id="Outer-Circle" fill="#3B82F6" cx="512" cy="512" r="280"></circle>
+        <circle id="Inner-Circle" fill="#121212" cx="512" cy="512" r="180"></circle>
+        <path d="M512,332 C608.65,332 687,410.35 687,507 C687,603.65 608.65,682 512,682 C415.35,682 337,603.65 337,507 C337,410.35 415.35,332 512,332 Z M512,392 C448.44,392 397,443.44 397,507 C397,570.56 448.44,622 512,622 C575.56,622 627,570.56 627,507 C627,443.44 575.56,392 512,392 Z" id="Combined-Shape" fill="#FFFFFF" fill-rule="nonzero"></path>
+        <circle id="Point-1" fill="#FFFFFF" cx="332" cy="352" r="50"></circle>
+        <circle id="Point-2" fill="#FFFFFF" cx="702" cy="412" r="50"></circle>
+        <circle id="Point-3" fill="#FFFFFF" cx="642" cy="662" r="50"></circle>
+        <circle id="Point-4" fill="#FFFFFF" cx="382" cy="682" r="50"></circle>
+    </g>
+</svg>

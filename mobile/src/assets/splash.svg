@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1242px" height="2436px" viewBox="0 0 1242 2436" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Connect App Splash Screen</title>
+    <g id="Splash" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect fill="#121212" x="0" y="0" width="1242" height="2436"></rect>
+        <circle id="Outer-Circle" fill="#3B82F6" cx="621" cy="1218" r="300"></circle>
+        <circle id="Inner-Circle" fill="#121212" cx="621" cy="1218" r="200"></circle>
+        <path d="M621,1018 C731.46,1018 821,1107.54 821,1218 C821,1328.46 731.46,1418 621,1418 C510.54,1418 421,1328.46 421,1218 C421,1107.54 510.54,1018 621,1018 Z M621,1078 C543.82,1078 481,1140.82 481,1218 C481,1295.18 543.82,1358 621,1358 C698.18,1358 761,1295.18 761,1218 C761,1140.82 698.18,1078 621,1078 Z" id="Combined-Shape" fill="#FFFFFF" fill-rule="nonzero"></path>
+        <circle id="Point-1" fill="#FFFFFF" cx="421" cy="1058" r="50"></circle>
+        <circle id="Point-2" fill="#FFFFFF" cx="831" cy="1118" r="50"></circle>
+        <circle id="Point-3" fill="#FFFFFF" cx="771" cy="1368" r="50"></circle>
+        <circle id="Point-4" fill="#FFFFFF" cx="471" cy="1388" r="50"></circle>
+        <text id="Connect" font-family="Arial-BoldMT, Arial" font-size="96" font-weight="bold" fill="#FFFFFF">
+            <tspan x="465" y="1670">Connect</tspan>
+        </text>
+    </g>
+</svg>
