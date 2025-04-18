@@ -96,8 +96,8 @@ export class DatabaseStorage implements IStorage {
       id: user.id,
       username: user.username,
       email: user.email,
-      avatarUrl: user.avatarUrl,
-      bio: user.bio,
+      avatarUrl: user.avatarUrl ?? undefined,
+      bio: user.bio ?? undefined,
       rating,
       reviewCount: userReviews.length,
       activitiesHosted: hostedCount,
@@ -171,17 +171,20 @@ export class DatabaseStorage implements IStorage {
       hostRating = hostReviews.reduce((sum, review) => sum + review.rating, 0) / hostReviews.length;
     }
     
-    return {
+    const result = {
       ...activity,
+      address: activity.address ?? undefined,
       host: {
         id: host.id,
         username: host.username,
-        avatarUrl: host.avatarUrl,
+        avatarUrl: host.avatarUrl ?? undefined,
         rating: hostRating
       },
       participantCount,
       status
     };
+    
+    return result;
   }
 
   async getNearbyActivities(latitude: number, longitude: number, radiusKm: number): Promise<ActivityWithHost[]> {
@@ -467,13 +470,13 @@ export class DatabaseStorage implements IStorage {
           reviewer: reviewer ? {
             id: reviewer.id,
             username: reviewer.username,
-            avatarUrl: reviewer.avatarUrl
+            avatarUrl: reviewer.avatarUrl ?? undefined
           } : undefined
         };
       })
     );
     
-    return reviewsWithReviewers;
+    return reviewsWithReviewers as (Review & { reviewer?: { id: number; username: string; avatarUrl?: string } })[];
   }
 
   async getExistingReview(reviewerId: number, userId: number, activityId: number): Promise<Review | undefined> {
