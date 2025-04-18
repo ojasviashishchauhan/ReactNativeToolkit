@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,6 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
+// Leaflet type declaration for window
+declare global {
+  interface Window { 
+    L: any;
+  }
+}
+
 type CreateActivityModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -26,8 +33,6 @@ const createActivitySchema = insertActivitySchema.omit({
   hostId: true,
 });
 
-type CreateActivityFormValues = z.infer<typeof createActivitySchema>;
-
 export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateActivityModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -36,9 +41,23 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
   // Map reference
   const [mapInstance, setMapInstance] = useState<any>(null);
   
-  // Create form
-  const form = useForm<CreateActivityFormValues>({
-    resolver: zodResolver(createActivitySchema),
+  // Create form with extended schema to handle string dates
+  const today = new Date();
+  const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+  const defaultTime = "12:00"; // Default time
+  
+  // Extended schema with string dateTime handling
+  const formSchema = createActivitySchema.extend({
+    // Override dateTime to allow string input
+    dateTime: z.string(),
+    // Add time field
+    time: z.string().default(defaultTime),
+  });
+  
+  type FormValues = z.infer<typeof formSchema>;
+  
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -48,7 +67,8 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
       exactLatitude: userLocation?.lat || 0,
       exactLongitude: userLocation?.lng || 0,
       address: "",
-      dateTime: new Date().toISOString(),
+      dateTime: formattedDate,
+      time: defaultTime,
       capacity: 5,
     },
   });
@@ -118,20 +138,30 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
 
   // Create activity mutation
   const createActivityMutation = useMutation({
-    mutationFn: async (values: CreateActivityFormValues) => {
-      // Convert date string to ISO format if needed
-      let formattedDate = values.dateTime;
-      if (typeof formattedDate === "string" && !formattedDate.includes("T")) {
-        // If it's a date-only string, append time
-        const [date, time] = values.dateTime.split("T");
-        const timeValue = form.getValues("time") || "12:00";
-        formattedDate = `${date}T${timeValue}:00.000Z`;
-      }
+    mutationFn: async (values: FormValues) => {
+      // Get the date and time from the form
+      const dateStr = values.dateTime;
+      const timeStr = values.time;
       
+      // Combine date and time into an ISO string
+      const combinedDateTimeStr = `${dateStr}T${timeStr}:00.000Z`;
+      
+      // Create a Date object from the ISO string
+      const dateTimeObject = new Date(combinedDateTimeStr);
+      
+      // Create the activity data object with proper typing
       const activityData = {
-        ...values,
-        dateTime: new Date(formattedDate).toISOString(),
-        hostId: user?.id,
+        title: values.title,
+        description: values.description,
+        type: values.type,
+        latitude: values.latitude,
+        longitude: values.longitude,
+        exactLatitude: values.exactLatitude,
+        exactLongitude: values.exactLongitude,
+        address: values.address,
+        capacity: values.capacity,
+        dateTime: dateTimeObject,
+        hostId: user?.id || 0,
       };
       
       const res = await apiRequest("POST", "/api/activities", activityData);
@@ -155,15 +185,15 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
     },
   });
 
-  const onSubmit = (values: CreateActivityFormValues) => {
+  const onSubmit = (values: FormValues) => {
     createActivityMutation.mutate(values);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Create New Activity</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">Create New Activity</DialogTitle>
           <button 
             className="absolute right-4 top-4 text-gray-500 hover:text-gray-700" 
             onClick={onClose}
@@ -303,11 +333,11 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
               )}
             />
             
-            <div>
+            <div className="relative z-0">
               <FormLabel>Location</FormLabel>
               <div 
                 id="location-picker-map"
-                className="h-40 bg-blue-100 rounded-lg mb-2"
+                className="h-40 bg-blue-100 rounded-lg mb-2 relative"
                 style={{ width: '100%' }}
                 onMouseEnter={initializeMap}
               >
