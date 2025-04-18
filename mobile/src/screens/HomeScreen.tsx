@@ -5,17 +5,19 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  RefreshControl,
   Image,
-  Platform,
   FlatList,
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../contexts/ThemeContext';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 type Activity = {
   id: number;
@@ -23,134 +25,193 @@ type Activity = {
   type: string;
   date: Date;
   location: string;
+  distance: string;
   participants: number;
   capacity: number;
-  image: string;
-  distance: string;
-  matchReason?: string;
+  hostName: string;
+  hostAvatar: string;
 };
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+type Recommendation = {
+  id: number;
+  title: string;
+  type: string;
+  reason: string;
+};
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { colors, isDark } = useTheme();
+  
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [upcomingActivities, setUpcomingActivities] = useState<Activity[]>([]);
   const [nearbyActivities, setNearbyActivities] = useState<Activity[]>([]);
-  const [recommendedActivities, setRecommendedActivities] = useState<Activity[]>([]);
-
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  
   useEffect(() => {
-    fetchActivities();
+    fetchData();
   }, []);
-
-  const fetchActivities = () => {
-    setRefreshing(true);
+  
+  const fetchData = async () => {
+    setLoading(true);
     
-    // Simulating API call to fetch activities
+    // In a real app, all these would be real API calls
+    await Promise.all([
+      fetchUpcomingActivities(),
+      fetchNearbyActivities(),
+      fetchRecommendations(),
+    ]);
+    
+    setLoading(false);
+  };
+  
+  const fetchUpcomingActivities = async () => {
+    // Simulating API call
     setTimeout(() => {
-      // Sample data - would be replaced with actual API call
-      const mockNearbyActivities = [
+      const mockActivities = [
         {
           id: 1,
           title: 'Morning Yoga in the Park',
           type: 'Sports',
           date: new Date(2023, 4, 15, 8, 0),
-          location: 'Central Park, New York',
+          location: 'Central Park',
+          distance: '0.8 mi',
           participants: 8,
           capacity: 15,
-          image: 'https://source.unsplash.com/random/300x200/?yoga',
-          distance: '0.5 mi'
+          hostName: 'Alex Johnson',
+          hostAvatar: 'https://source.unsplash.com/random/100x100/?portrait',
         },
         {
           id: 2,
-          title: 'Street Photography Walk',
-          type: 'Arts',
-          date: new Date(2023, 4, 14, 16, 30),
-          location: 'Brooklyn Bridge, New York',
-          participants: 12,
-          capacity: 20,
-          image: 'https://source.unsplash.com/random/300x200/?photography',
-          distance: '1.2 mi'
-        },
-        {
-          id: 3,
           title: 'Coffee & Conversation',
           type: 'Social',
           date: new Date(2023, 4, 16, 10, 0),
-          location: 'Blue Bottle Coffee, New York',
+          location: 'Blue Bottle Coffee',
+          distance: '1.2 mi',
           participants: 5,
           capacity: 10,
-          image: 'https://source.unsplash.com/random/300x200/?coffee',
-          distance: '0.8 mi'
-        }
+          hostName: 'Jane Smith',
+          hostAvatar: 'https://source.unsplash.com/random/100x100/?woman',
+        },
       ];
       
-      const mockRecommendedActivities = [
+      setUpcomingActivities(mockActivities);
+    }, 1000);
+  };
+  
+  const fetchNearbyActivities = async () => {
+    // Simulating API call
+    setTimeout(() => {
+      const mockActivities = [
+        {
+          id: 3,
+          title: 'Street Photography Walk',
+          type: 'Arts',
+          date: new Date(2023, 4, 14, 16, 30),
+          location: 'Brooklyn Bridge',
+          distance: '1.5 mi',
+          participants: 12,
+          capacity: 20,
+          hostName: 'Mike Wilson',
+          hostAvatar: 'https://source.unsplash.com/random/100x100/?man',
+        },
         {
           id: 4,
           title: 'Tech Meetup: AI in Healthcare',
           type: 'Technology',
           date: new Date(2023, 4, 18, 18, 0),
-          location: 'WeWork Times Square, New York',
+          location: 'WeWork Times Square',
+          distance: '2.0 mi',
           participants: 45,
           capacity: 100,
-          image: 'https://source.unsplash.com/random/300x200/?tech',
-          distance: '2.5 mi',
-          matchReason: 'Based on your interest in AI'
+          hostName: 'Sarah Davis',
+          hostAvatar: 'https://source.unsplash.com/random/100x100/?girl',
         },
         {
           id: 5,
-          title: 'Outdoor Rock Climbing',
-          type: 'Sports',
-          date: new Date(2023, 4, 20, 9, 0),
-          location: 'Hudson Valley, New York',
-          participants: 6,
-          capacity: 12,
-          image: 'https://source.unsplash.com/random/300x200/?climbing',
-          distance: '15 mi',
-          matchReason: 'Similar to activities you joined'
+          title: 'Rooftop Jazz Night',
+          type: 'Music',
+          date: new Date(2023, 4, 17, 19, 30),
+          location: 'The Standard Highline',
+          distance: '1.7 mi',
+          participants: 28,
+          capacity: 50,
+          hostName: 'David Brown',
+          hostAvatar: 'https://source.unsplash.com/random/100x100/?musician',
         },
+      ];
+      
+      setNearbyActivities(mockActivities);
+    }, 1200);
+  };
+  
+  const fetchRecommendations = async () => {
+    // Simulating API call
+    setTimeout(() => {
+      const mockRecommendations = [
         {
           id: 6,
-          title: 'Painting Workshop',
+          title: 'Hiking Trip to Bear Mountain',
+          type: 'Outdoors',
+          reason: 'Based on your interest in outdoor activities',
+        },
+        {
+          id: 7,
+          title: 'Wine Tasting in SoHo',
+          type: 'Food',
+          reason: 'Popular in your area',
+        },
+        {
+          id: 8,
+          title: 'Beginner's Pottery Class',
           type: 'Arts',
-          date: new Date(2023, 4, 17, 14, 0),
-          location: 'Creative Studio, Manhattan',
-          participants: 10,
-          capacity: 15,
-          image: 'https://source.unsplash.com/random/300x200/?painting',
-          distance: '1.5 mi',
-          matchReason: 'Matched to your Arts interests'
-        }
+          reason: 'Similar to activities you've joined before',
+        },
       ];
-
-      setNearbyActivities(mockNearbyActivities);
-      setRecommendedActivities(mockRecommendedActivities);
-      setRefreshing(false);
-    }, 1000);
+      
+      setRecommendations(mockRecommendations);
+    }, 1500);
   };
-
-  const onRefresh = () => {
-    fetchActivities();
+  
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
   };
-
-  const handleActivityPress = (activity: Activity) => {
-    navigation.navigate('ActivityDetail', { activityId: activity.id });
-  };
-
+  
   const formatDate = (date: Date) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    };
-    return date.toLocaleString('en-US', options);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    let dateString = '';
+    
+    // Check if it's today or tomorrow
+    if (date.toDateString() === today.toDateString()) {
+      dateString = 'Today';
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      dateString = 'Tomorrow';
+    } else {
+      // Format as "Mon, May 15"
+      dateString = date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+    
+    // Add time "8:00 AM"
+    const timeString = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    
+    return `${dateString} at ${timeString}`;
   };
-
+  
   const getActivityTypeColor = (type: string) => {
-    const typeColors = {
+    const typeColors: {[key: string]: string} = {
       Sports: '#4CAF50',
       Arts: '#9C27B0',
       Social: '#2196F3',
@@ -163,91 +224,145 @@ const HomeScreen = () => {
     
     return typeColors[type] || '#757575';
   };
-
-  const renderNearbyActivity = ({ item }: { item: Activity }) => (
-    <TouchableOpacity 
-      style={[styles.activityCard, { backgroundColor: colors.card }]}
-      onPress={() => handleActivityPress(item)}
+  
+  const getActivityTypeIcon = (type: string) => {
+    const typeIcons: {[key: string]: string} = {
+      Sports: 'basketball-outline',
+      Arts: 'color-palette-outline',
+      Social: 'people-outline',
+      Education: 'school-outline',
+      Food: 'restaurant-outline',
+      Music: 'musical-notes-outline',
+      Technology: 'hardware-chip-outline',
+      Outdoors: 'leaf-outline',
+    };
+    
+    return typeIcons[type] || 'help-circle-outline';
+  };
+  
+  const renderUpcomingActivity = ({ item }: { item: Activity }) => (
+    <TouchableOpacity
+      style={[styles.upcomingCard, { backgroundColor: colors.card }]}
+      onPress={() => navigation.navigate('ActivityDetail', { activityId: item.id })}
     >
-      <Image 
-        source={{ uri: item.image }} 
-        style={styles.activityImage} 
-        resizeMode="cover"
-      />
-      <View style={styles.cardOverlay}>
+      <View style={styles.upcomingCardHeader}>
         <View style={[styles.typeTag, { backgroundColor: getActivityTypeColor(item.type) }]}>
+          <Ionicons name={getActivityTypeIcon(item.type)} size={14} color="white" />
           <Text style={styles.typeText}>{item.type}</Text>
         </View>
-        <Text style={[styles.distanceText, { color: colors.background }]}>
-          {item.distance}
+        <Text style={[styles.upcomingDate, { color: colors.primary }]}>
+          {formatDate(item.date)}
         </Text>
       </View>
-      <View style={styles.cardContent}>
-        <Text style={[styles.activityTitle, { color: colors.text }]} numberOfLines={1}>
-          {item.title}
+      
+      <Text style={[styles.upcomingTitle, { color: colors.text }]}>
+        {item.title}
+      </Text>
+      
+      <View style={styles.locationContainer}>
+        <Ionicons name="location-outline" size={14} color={colors.inactive} />
+        <Text style={[styles.locationText, { color: colors.inactive }]}>
+          {item.location} • {item.distance}
         </Text>
-        <Text style={[styles.activityDate, { color: colors.text }]}>
-          <Ionicons name="calendar-outline" size={14} /> {formatDate(item.date)}
+      </View>
+      
+      <View style={styles.hostContainer}>
+        <Image source={{ uri: item.hostAvatar }} style={styles.hostAvatar} />
+        <Text style={[styles.hostText, { color: colors.text }]}>
+          Hosted by {item.hostName}
         </Text>
-        <Text style={[styles.activityLocation, { color: colors.text }]} numberOfLines={1}>
-          <Ionicons name="location-outline" size={14} /> {item.location}
-        </Text>
-        <View style={styles.participantsContainer}>
-          <Ionicons name="people-outline" size={14} color={colors.text} />
-          <Text style={[styles.participantsText, { color: colors.text }]}>
+      </View>
+      
+      <View style={styles.participantsContainer}>
+        <View style={styles.participantsInfo}>
+          <Ionicons name="people-outline" size={14} color={colors.inactive} />
+          <Text style={[styles.participantsText, { color: colors.inactive }]}>
             {item.participants}/{item.capacity} joined
           </Text>
         </View>
+        <TouchableOpacity
+          style={[styles.detailsButton, { backgroundColor: colors.primary + '20' }]}
+        >
+          <Text style={[styles.detailsButtonText, { color: colors.primary }]}>View</Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
-
-  const renderRecommendedActivity = ({ item }: { item: Activity }) => (
-    <TouchableOpacity 
-      style={[styles.recommendedCard, { backgroundColor: colors.card }]}
-      onPress={() => handleActivityPress(item)}
+  
+  const renderNearbyActivity = ({ item }: { item: Activity }) => (
+    <TouchableOpacity
+      style={[styles.nearbyCard, { backgroundColor: colors.card }]}
+      onPress={() => navigation.navigate('ActivityDetail', { activityId: item.id })}
     >
-      <Image 
-        source={{ uri: item.image }} 
-        style={styles.recommendedImage} 
-        resizeMode="cover"
-      />
-      <View style={styles.cardOverlay}>
+      <View style={styles.nearbyCardContent}>
         <View style={[styles.typeTag, { backgroundColor: getActivityTypeColor(item.type) }]}>
+          <Ionicons name={getActivityTypeIcon(item.type)} size={14} color="white" />
           <Text style={styles.typeText}>{item.type}</Text>
         </View>
-      </View>
-      <View style={styles.recommendedContent}>
-        <Text style={[styles.recommendedTitle, { color: colors.text }]} numberOfLines={1}>
+        
+        <Text numberOfLines={1} style={[styles.nearbyTitle, { color: colors.text }]}>
           {item.title}
         </Text>
-        <Text style={[styles.recommendedDate, { color: colors.text }]}>
-          <Ionicons name="calendar-outline" size={12} /> {formatDate(item.date)}
-        </Text>
-        <Text style={[styles.recommendedLocation, { color: colors.text }]} numberOfLines={1}>
-          <Ionicons name="location-outline" size={12} /> {item.location}
-        </Text>
-        <View style={styles.recommendedBottom}>
-          <View style={styles.participantsContainer}>
-            <Ionicons name="people-outline" size={12} color={colors.text} />
-            <Text style={[styles.recommendedParticipants, { color: colors.text }]}>
+        
+        <View style={styles.nearbyDetailsContainer}>
+          <View style={styles.nearbyDetail}>
+            <Ionicons name="calendar-outline" size={12} color={colors.inactive} />
+            <Text style={[styles.nearbyDetailText, { color: colors.inactive }]}>
+              {formatDate(item.date)}
+            </Text>
+          </View>
+          
+          <View style={styles.nearbyDetail}>
+            <Ionicons name="location-outline" size={12} color={colors.inactive} />
+            <Text style={[styles.nearbyDetailText, { color: colors.inactive }]}>
+              {item.distance} away
+            </Text>
+          </View>
+          
+          <View style={styles.nearbyDetail}>
+            <Ionicons name="people-outline" size={12} color={colors.inactive} />
+            <Text style={[styles.nearbyDetailText, { color: colors.inactive }]}>
               {item.participants}/{item.capacity}
             </Text>
           </View>
-          <Text style={[styles.distanceTag, { color: colors.primary }]}>{item.distance}</Text>
         </View>
-        {item.matchReason && (
-          <View style={[styles.matchReasonTag, { backgroundColor: colors.primary + '20' }]}>
-            <Ionicons name="thumbs-up-outline" size={12} color={colors.primary} />
-            <Text style={[styles.matchReasonText, { color: colors.primary }]}>
-              {item.matchReason}
-            </Text>
-          </View>
-        )}
       </View>
     </TouchableOpacity>
   );
-
+  
+  const renderRecommendation = ({ item }: { item: Recommendation }) => (
+    <TouchableOpacity
+      style={[styles.recommendationItem, { backgroundColor: colors.card }]}
+      onPress={() => navigation.navigate('ActivityDetail', { activityId: item.id })}
+    >
+      <View style={styles.recommendationContent}>
+        <View style={[styles.recommendationIconContainer, { backgroundColor: getActivityTypeColor(item.type) + '20' }]}>
+          <Ionicons name={getActivityTypeIcon(item.type)} size={24} color={getActivityTypeColor(item.type)} />
+        </View>
+        
+        <View style={styles.recommendationTextContainer}>
+          <Text numberOfLines={1} style={[styles.recommendationTitle, { color: colors.text }]}>
+            {item.title}
+          </Text>
+          <Text style={[styles.recommendationReason, { color: colors.inactive }]}>
+            {item.reason}
+          </Text>
+        </View>
+        
+        <Ionicons name="chevron-forward" size={20} color={colors.inactive} />
+      </View>
+    </TouchableOpacity>
+  );
+  
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading your activities...</Text>
+      </SafeAreaView>
+    );
+  }
+  
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -257,41 +372,80 @@ const HomeScreen = () => {
       >
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: colors.text }]}>Hello!</Text>
-            <Text style={[styles.subtitle, { color: colors.text }]}>Find activities nearby</Text>
+            <Text style={[styles.greeting, { color: colors.text }]}>Hello, Alex</Text>
+            <Text style={[styles.subGreeting, { color: colors.inactive }]}>Ready to connect?</Text>
           </View>
+          
           <TouchableOpacity
             style={[styles.createButton, { backgroundColor: colors.primary }]}
             onPress={() => navigation.navigate('CreateActivity')}
           >
-            <Ionicons name="add" size={24} color="#FFFFFF" />
+            <Ionicons name="add" size={20} color="white" />
+            <Text style={styles.createButtonText}>Create</Text>
           </TouchableOpacity>
         </View>
-
+        
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Nearby Activities</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Upcoming Activities</Text>
+          {upcomingActivities.length > 0 ? (
+            <FlatList
+              data={upcomingActivities}
+              renderItem={renderUpcomingActivity}
+              keyExtractor={(item) => item.id.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.upcomingList}
+              scrollEnabled={false}
+            />
+          ) : (
+            <View style={[styles.emptyStateContainer, { backgroundColor: colors.card }]}>
+              <Ionicons name="calendar-outline" size={40} color={colors.inactive} />
+              <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+                No upcoming activities
+              </Text>
+              <Text style={[styles.emptyStateDescription, { color: colors.inactive }]}>
+                Join activities or create your own to see them here
+              </Text>
+              <TouchableOpacity
+                style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
+                onPress={() => navigation.navigate('Map')}
+              >
+                <Text style={styles.emptyStateButtonText}>Find Activities</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Activities Near You</Text>
+            <TouchableOpacity
+              style={styles.seeAllButton}
+              onPress={() => navigation.navigate('Map')}
+            >
+              <Text style={[styles.seeAllText, { color: colors.primary }]}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          
           <FlatList
-            horizontal
             data={nearbyActivities}
             renderItem={renderNearbyActivity}
             keyExtractor={(item) => item.id.toString()}
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.nearbyList}
           />
         </View>
-
+        
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended For You</Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.text }]}>
-            Based on your interests and past activities
-          </Text>
-          <View style={styles.recommendedGrid}>
-            {recommendedActivities.map((item) => (
-              <View key={item.id} style={styles.recommendedWrapper}>
-                {renderRecommendedActivity({ item })}
-              </View>
-            ))}
-          </View>
+          <FlatList
+            data={recommendations}
+            renderItem={renderRecommendation}
+            keyExtractor={(item) => item.id.toString()}
+            scrollEnabled={false}
+            contentContainerStyle={styles.recommendationsList}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -302,63 +456,166 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingVertical: 16,
   },
   greeting: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 4,
   },
-  subtitle: {
+  subGreeting: {
     fontSize: 16,
-    opacity: 0.7,
   },
   createButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  createButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  seeAllButton: {
+    paddingVertical: 4,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  upcomingList: {
+    paddingLeft: 16,
+    paddingBottom: 8,
+  },
+  upcomingCard: {
+    width: 300,
+    borderRadius: 12,
+    padding: 16,
+    marginRight: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.1,
         shadowRadius: 4,
       },
       android: {
-        elevation: 4,
+        elevation: 3,
       },
     }),
   },
-  section: {
-    paddingHorizontal: 16,
-    marginBottom: 20,
+  upcomingCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 20,
+  typeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  typeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  upcomingDate: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  upcomingTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
   },
-  sectionSubtitle: {
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationText: {
     fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 16,
+    marginLeft: 4,
+  },
+  hostContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  hostAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  hostText: {
+    fontSize: 14,
+  },
+  participantsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  participantsInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  participantsText: {
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  detailsButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  detailsButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   nearbyList: {
-    paddingRight: 16,
-    paddingVertical: 8,
+    paddingLeft: 16,
   },
-  activityCard: {
-    width: 280,
+  nearbyCard: {
+    width: 200,
     borderRadius: 12,
-    marginLeft: 16,
-    marginVertical: 8,
+    marginRight: 12,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -372,74 +629,32 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  activityImage: {
-    width: '100%',
-    height: 140,
-  },
-  cardOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  nearbyCardContent: {
     padding: 12,
   },
-  typeTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  typeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  distanceText: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    color: 'white',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    fontSize: 12,
-  },
-  cardContent: {
-    padding: 12,
-  },
-  activityTitle: {
+  nearbyTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 6,
+    marginVertical: 8,
   },
-  activityDate: {
-    fontSize: 14,
-    marginBottom: 4,
+  nearbyDetailsContainer: {
+    marginTop: 4,
   },
-  activityLocation: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  participantsContainer: {
+  nearbyDetail: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 4,
   },
-  participantsText: {
-    fontSize: 14,
+  nearbyDetailText: {
+    fontSize: 12,
     marginLeft: 4,
   },
-  recommendedGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -8,
+  recommendationsList: {
+    paddingHorizontal: 16,
   },
-  recommendedWrapper: {
-    width: '50%',
-    paddingHorizontal: 8,
-    marginBottom: 16,
-  },
-  recommendedCard: {
+  recommendationItem: {
     borderRadius: 12,
-    overflow: 'hidden',
+    marginBottom: 8,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -452,50 +667,55 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  recommendedImage: {
-    width: '100%',
-    height: 100,
+  recommendationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
   },
-  recommendedContent: {
-    padding: 10,
+  recommendationIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  recommendedTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
+  recommendationTextContainer: {
+    flex: 1,
+  },
+  recommendationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 4,
   },
-  recommendedDate: {
+  recommendationReason: {
     fontSize: 12,
-    marginBottom: 2,
   },
-  recommendedLocation: {
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  recommendedBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  emptyStateContainer: {
+    marginHorizontal: 16,
+    padding: 24,
+    borderRadius: 12,
     alignItems: 'center',
   },
-  recommendedParticipants: {
-    fontSize: 12,
-    marginLeft: 4,
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 12,
+    marginBottom: 8,
   },
-  distanceTag: {
-    fontSize: 12,
-    fontWeight: '500',
+  emptyStateDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
   },
-  matchReasonTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+  emptyStateButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
-  matchReasonText: {
-    fontSize: 10,
-    marginLeft: 4,
+  emptyStateButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });
 
