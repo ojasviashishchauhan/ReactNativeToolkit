@@ -48,19 +48,19 @@ function NavItem({ href, icon, label, isActive, badge }: NavItemProps) {
   return (
     <Link href={href}>
       <a 
-        className={`flex flex-col items-center py-3 px-5 ${
+        className={`flex flex-col items-center py-4 px-5 ${
           isActive ? "text-primary" : "text-gray-500 hover:text-gray-700"
         }`}
       >
         <div className="relative">
-          <i className={`${icon} text-lg`}></i>
+          <i className={`${icon} text-2xl mb-1`}></i>
           {badge && (
-            <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-primary text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+            <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {badge}
             </span>
           )}
         </div>
-        <span className="text-xs mt-1">{label}</span>
+        <span className="text-sm font-medium">{label}</span>
       </a>
     </Link>
   );

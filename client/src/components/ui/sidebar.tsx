@@ -20,9 +20,11 @@ export function Sidebar({ user }: SidebarProps) {
       {/* App Logo */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-            <i className="fas fa-users text-white text-lg"></i>
-          </div>
+          <img 
+            src="/assets/connect-logo.png" 
+            alt="Connect Logo" 
+            className="w-12 h-12 object-contain"
+          />
           <h1 className="text-xl font-bold text-gray-800">Connect</h1>
         </div>
       </div>

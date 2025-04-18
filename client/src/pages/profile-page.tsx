@@ -38,6 +38,8 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [age, setAge] = useState<number | undefined>(undefined);
+  const [sex, setSex] = useState<string>("");
 
   // Fetch user profile
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -88,6 +90,8 @@ export default function ProfilePage() {
     if (profile) {
       setBio(profile.bio || "");
       setAvatarUrl(profile.avatarUrl || "");
+      setAge(profile.age);
+      setSex(profile.sex || "");
     }
   }, [profile]);
 
@@ -95,6 +99,8 @@ export default function ProfilePage() {
     updateProfileMutation.mutate({
       bio,
       avatarUrl,
+      age,
+      sex,
     });
   };
 
