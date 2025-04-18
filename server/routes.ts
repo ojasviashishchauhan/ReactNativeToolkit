@@ -53,6 +53,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hostId: userId
       };
       
+      // Process the datetime string to a Date object if it's a string
+      if (typeof activityData.dateTime === 'string') {
+        activityData.dateTime = new Date(activityData.dateTime);
+      }
+      
       const validatedData = insertActivitySchema.parse(activityData);
       const activity = await storage.createActivity(validatedData);
       

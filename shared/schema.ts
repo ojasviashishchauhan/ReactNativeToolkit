@@ -69,19 +69,27 @@ export const activitiesRelations = relations(activities, ({ one, many }) => ({
   reviews: many(reviews, { relationName: "activity_reviews" }),
 }));
 
-export const insertActivitySchema = createInsertSchema(activities).pick({
-  hostId: true,
-  title: true,
-  description: true,
-  type: true,
-  latitude: true,
-  longitude: true,
-  exactLatitude: true,
-  exactLongitude: true,
-  address: true,
-  dateTime: true,
-  capacity: true,
-});
+export const insertActivitySchema = createInsertSchema(activities)
+  .pick({
+    hostId: true,
+    title: true,
+    description: true,
+    type: true,
+    latitude: true,
+    longitude: true,
+    exactLatitude: true,
+    exactLongitude: true,
+    address: true,
+    dateTime: true,
+    capacity: true,
+  })
+  .extend({
+    // Transform string dates to Date objects for the dateTime field
+    dateTime: z.preprocess(
+      (arg) => (typeof arg === 'string' ? new Date(arg) : arg),
+      z.date()
+    ),
+  });
 
 // Participant status types
 export type ParticipantStatus = "pending" | "approved" | "rejected";
