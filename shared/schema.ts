@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, real, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // User schema
 export const users = pgTable("users", {
@@ -12,6 +13,14 @@ export const users = pgTable("users", {
   bio: text("bio"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const usersRelations = relations(users, ({ many }) => ({
+  hostedActivities: many(activities, { relationName: "host" }),
+  participations: many(participants, { relationName: "user_participations" }),
+  sentMessages: many(messages, { relationName: "sender" }),
+  givenReviews: many(reviews, { relationName: "reviewer" }),
+  receivedReviews: many(reviews, { relationName: "reviewed_user" }),
+}));
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -34,7 +43,7 @@ export const ACTIVITY_TYPES = [
 // Activity schema
 export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
-  hostId: integer("host_id").notNull(),
+  hostId: integer("host_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   type: text("type").notNull(), // One of ACTIVITY_TYPES
@@ -48,6 +57,17 @@ export const activities = pgTable("activities", {
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const activitiesRelations = relations(activities, ({ one, many }) => ({
+  host: one(users, {
+    fields: [activities.hostId],
+    references: [users.id],
+    relationName: "host",
+  }),
+  participants: many(participants, { relationName: "activity_participants" }),
+  messages: many(messages, { relationName: "activity_messages" }),
+  reviews: many(reviews, { relationName: "activity_reviews" }),
+}));
 
 export const insertActivitySchema = createInsertSchema(activities).pick({
   hostId: true,
@@ -69,11 +89,24 @@ export type ParticipantStatus = "pending" | "approved" | "rejected";
 // Participants schema
 export const participants = pgTable("participants", {
   id: serial("id").primaryKey(),
-  activityId: integer("activity_id").notNull(),
-  userId: integer("user_id").notNull(),
+  activityId: integer("activity_id").notNull().references(() => activities.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   status: text("status").notNull(), // "pending", "approved", "rejected"
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const participantsRelations = relations(participants, ({ one }) => ({
+  activity: one(activities, {
+    fields: [participants.activityId],
+    references: [activities.id],
+    relationName: "activity_participants"
+  }),
+  user: one(users, {
+    fields: [participants.userId],
+    references: [users.id],
+    relationName: "user_participations"
+  })
+}));
 
 export const insertParticipantSchema = createInsertSchema(participants).pick({
   activityId: true,
@@ -84,11 +117,24 @@ export const insertParticipantSchema = createInsertSchema(participants).pick({
 // Chat message schema
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  activityId: integer("activity_id").notNull(),
-  senderId: integer("sender_id").notNull(),
+  activityId: integer("activity_id").notNull().references(() => activities.id),
+  senderId: integer("sender_id").notNull().references(() => users.id),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  activity: one(activities, {
+    fields: [messages.activityId],
+    references: [activities.id],
+    relationName: "activity_messages"
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id],
+    relationName: "sender"
+  })
+}));
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
   activityId: true,
@@ -99,13 +145,31 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 // Reviews schema
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
-  reviewerId: integer("reviewer_id").notNull(),
-  userId: integer("user_id").notNull(),
-  activityId: integer("activity_id").notNull(),
+  reviewerId: integer("reviewer_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  activityId: integer("activity_id").notNull().references(() => activities.id),
   rating: integer("rating").notNull(),
   comment: text("comment"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  reviewer: one(users, {
+    fields: [reviews.reviewerId],
+    references: [users.id],
+    relationName: "reviewer"
+  }),
+  reviewedUser: one(users, {
+    fields: [reviews.userId],
+    references: [users.id],
+    relationName: "reviewed_user"
+  }),
+  activity: one(activities, {
+    fields: [reviews.activityId],
+    references: [activities.id],
+    relationName: "activity_reviews"
+  })
+}));
 
 export const insertReviewSchema = createInsertSchema(reviews).pick({
   reviewerId: true,
