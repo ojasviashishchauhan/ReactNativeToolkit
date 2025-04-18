@@ -11,6 +11,9 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
+  age: integer("age"),
+  sex: text("sex"),
+  logoUrl: text("logo_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -28,6 +31,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   avatarUrl: true,
   bio: true,
+  age: true,
+  sex: true,
+  logoUrl: true,
 });
 
 // Activity types
@@ -235,6 +241,9 @@ export const userProfileSchema = z.object({
   email: z.string(),
   avatarUrl: z.string().nullable().transform(val => val === null ? undefined : val),
   bio: z.string().nullable().transform(val => val === null ? undefined : val),
+  age: z.number().nullable().transform(val => val === null ? undefined : val),
+  sex: z.string().nullable().transform(val => val === null ? undefined : val),
+  logoUrl: z.string().nullable().transform(val => val === null ? undefined : val),
   rating: z.number().optional(),
   reviewCount: z.number(),
   activitiesHosted: z.number(),
