@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ActivityWithHost } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, MinusIcon, Locate, MapPin, Ruler } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
+import { PlusIcon, MinusIcon, Locate, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { GoogleMap, useJsApiLoader, Marker, Circle, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 
 // Types
 type MapViewProps = {
@@ -88,16 +86,27 @@ export function GoogleMapView({
 }: MapViewProps) {
   const { toast } = useToast();
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
-  const [searchRadius, setSearchRadius] = useState<number>(10); // Default 10km radius
-  const [showRadiusCircle, setShowRadiusCircle] = useState<boolean>(true);
   const [selectedActivity, setSelectedActivity] = useState<ActivityWithHost | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  
+  // Save and retrieve the last location from localStorage
+  const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number } | null>(() => {
+    const savedLocation = localStorage.getItem('lastMapLocation');
+    return savedLocation ? JSON.parse(savedLocation) : null;
+  });
 
   // Default view if user location not available
   const defaultLocation = { lat: 40.7128, lng: -74.0060 }; // NYC
-  const mapCenter = userLocation || defaultLocation;
+  const mapCenter = userLocation || lastLocation || defaultLocation;
+  
+  // Always try to use the user's location when first loading
+  useEffect(() => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.panTo(userLocation);
+    }
+  }, [userLocation, mapRef.current]);
 
   // Access the Google Maps API key from environment secrets
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -115,6 +124,16 @@ export function GoogleMapView({
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
     setMap(map);
+    
+    // Add listener for idle event to save location after movement
+    map.addListener('idle', () => {
+      const center = map.getCenter();
+      if (center) {
+        const newLocation = { lat: center.lat(), lng: center.lng() };
+        setLastLocation(newLocation);
+        localStorage.setItem('lastMapLocation', JSON.stringify(newLocation));
+      }
+    });
   }, []);
 
   // Cleanup function when component unmounts
@@ -164,16 +183,6 @@ export function GoogleMapView({
     setActiveFilter(filter);
   };
   
-  // Toggle search radius visibility
-  const toggleSearchRadius = () => {
-    setShowRadiusCircle(!showRadiusCircle);
-  };
-  
-  // Update search radius
-  const handleRadiusChange = (value: number[]) => {
-    setSearchRadius(value[0]);
-  };
-
   // Handle activity marker click
   const handleActivityMarkerClick = (activity: ActivityWithHost) => {
     setSelectedActivity(activity);
@@ -194,7 +203,7 @@ export function GoogleMapView({
             Please provide a valid Google Maps API key in your environment variables.
           </p>
           <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300 mt-2 text-left">
-            <p className="font-mono">GOOGLE_MAPS_API_KEY=your_api_key_here</p>
+            <p className="font-mono">VITE_GOOGLE_MAPS_API_KEY=your_api_key_here</p>
           </div>
         </div>
       </div>
@@ -252,21 +261,6 @@ export function GoogleMapView({
           />
         )}
         
-        {/* Search radius circle */}
-        {userLocation && showRadiusCircle && (
-          <Circle
-            center={userLocation}
-            radius={searchRadius * 1000}
-            options={{
-              fillColor: '#4F46E5',
-              fillOpacity: 0.1,
-              strokeColor: '#4F46E5',
-              strokeOpacity: 0.8,
-              strokeWeight: 2,
-            }}
-          />
-        )}
-        
         {/* Activity markers */}
         {filteredActivities.map(activity => (
           <Marker
@@ -314,66 +308,33 @@ export function GoogleMapView({
         )}
       </GoogleMap>
 
-      {/* Map Controls */}
-      <div className="absolute right-4 top-4 flex flex-col space-y-2 z-[1000]">
+      {/* Map Controls - moved to bottom left */}
+      <div className="absolute left-4 bottom-20 flex space-x-2 z-[1000]">
         <Button
           variant="default"
           size="icon"
-          className="h-10 w-10 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
           onClick={handleZoomIn}
         >
-          <PlusIcon className="h-5 w-5" />
+          <PlusIcon className="h-6 w-6" />
         </Button>
         <Button
           variant="default"
           size="icon"
-          className="h-10 w-10 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
           onClick={handleZoomOut}
         >
-          <MinusIcon className="h-5 w-5" />
+          <MinusIcon className="h-6 w-6" />
         </Button>
         <Button
           variant="default"
           size="icon"
-          className="h-10 w-10 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
           onClick={handleLocateUser}
         >
-          <Locate className="h-5 w-5" />
-        </Button>
-        <Button
-          variant="default"
-          size="icon"
-          className={`h-10 w-10 rounded-lg ${showRadiusCircle ? 'bg-primary text-white' : 'bg-white text-gray-700'} hover:bg-gray-100 shadow-md`}
-          onClick={toggleSearchRadius}
-          title="Set search radius"
-        >
-          <Ruler className="h-5 w-5" />
+          <Locate className="h-6 w-6" />
         </Button>
       </div>
-      
-      {/* Search Radius Control */}
-      {showRadiusCircle && (
-        <Card className="absolute left-4 bottom-16 p-4 shadow-lg w-64">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Search Radius</span>
-              <Badge variant="outline">{searchRadius} km</Badge>
-            </div>
-            <Slider 
-              defaultValue={[searchRadius]} 
-              max={50} 
-              min={1} 
-              step={1} 
-              onValueChange={handleRadiusChange}
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>1km</span>
-              <span>25km</span>
-              <span>50km</span>
-            </div>
-          </div>
-        </Card>
-      )}
 
       {/* Activity Filters */}
       <div className="absolute left-4 top-4 right-16 overflow-x-auto hide-scrollbar">
