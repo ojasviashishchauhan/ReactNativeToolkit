@@ -73,68 +73,109 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
     },
   });
 
-  // Initialize map
-  const initializeMap = () => {
-    if (!isOpen || mapInstance || !userLocation) return;
+  // Effect to initialize map when modal opens
+  useEffect(() => {
+    // Cleanup function to handle map destruction
+    let mapToDestroy: any = null;
     
-    // Load leaflet script dynamically if not already loaded
-    if (!window.L) {
-      console.log("Leaflet is not loaded yet");
-      return;
+    const initMap = () => {
+      if (!isOpen || !userLocation) return;
+      
+      // Wait for DOM to be ready
+      setTimeout(() => {
+        // Check if map is already initialized
+        if (mapInstance) {
+          mapInstance.invalidateSize();
+          return;
+        }
+        
+        // Check if Leaflet is loaded
+        if (!window.L) {
+          console.log("Leaflet is not loaded yet");
+          return;
+        }
+        
+        const L = window.L;
+        
+        // Get map container
+        const mapContainer = document.getElementById('location-picker-map');
+        
+        if (!mapContainer) {
+          console.log("Map container not found");
+          return;
+        }
+        
+        // Create map instance
+        const map = L.map(mapContainer, {
+          zoomControl: false,
+          attributionControl: false
+        }).setView([userLocation.lat, userLocation.lng], 15);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Add zoom control in a better position
+        L.control.zoom({
+          position: 'bottomright'
+        }).addTo(map);
+        
+        // Add marker for selected location
+        const marker = L.marker([userLocation.lat, userLocation.lng], {
+          draggable: true
+        }).addTo(map);
+        
+        // Update form when marker is dragged
+        marker.on('dragend', function() {
+          const position = marker.getLatLng();
+          setMapLocation({
+            lat: position.lat,
+            lng: position.lng
+          });
+          form.setValue("latitude", position.lat);
+          form.setValue("longitude", position.lng);
+          form.setValue("exactLatitude", position.lat);
+          form.setValue("exactLongitude", position.lng);
+        });
+        
+        // Allow clicking on map to move marker
+        map.on('click', function(e: any) {
+          marker.setLatLng(e.latlng);
+          setMapLocation({
+            lat: e.latlng.lat,
+            lng: e.latlng.lng
+          });
+          form.setValue("latitude", e.latlng.lat);
+          form.setValue("longitude", e.latlng.lng);
+          form.setValue("exactLatitude", e.latlng.lat);
+          form.setValue("exactLongitude", e.latlng.lng);
+        });
+        
+        // Force a recalculation of the map's size
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 100);
+        
+        setMapInstance(map);
+        mapToDestroy = map;
+      }, 100);
+    };
+    
+    // Initialize map when modal opens
+    if (isOpen) {
+      initMap();
     }
     
-    const L = window.L;
-    
-    // Create map container
-    const mapContainer = document.getElementById('location-picker-map');
-    
-    if (!mapContainer) {
-      console.log("Map container not found");
-      return;
-    }
-    
-    // Create map instance
-    const map = L.map(mapContainer).setView([userLocation.lat, userLocation.lng], 15);
-    
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-    
-    // Add marker for selected location
-    const marker = L.marker([userLocation.lat, userLocation.lng], {
-      draggable: true
-    }).addTo(map);
-    
-    // Update form when marker is dragged
-    marker.on('dragend', function() {
-      const position = marker.getLatLng();
-      setMapLocation({
-        lat: position.lat,
-        lng: position.lng
-      });
-      form.setValue("latitude", position.lat);
-      form.setValue("longitude", position.lng);
-      form.setValue("exactLatitude", position.lat);
-      form.setValue("exactLongitude", position.lng);
-    });
-    
-    // Allow clicking on map to move marker
-    map.on('click', function(e: any) {
-      marker.setLatLng(e.latlng);
-      setMapLocation({
-        lat: e.latlng.lat,
-        lng: e.latlng.lng
-      });
-      form.setValue("latitude", e.latlng.lat);
-      form.setValue("longitude", e.latlng.lng);
-      form.setValue("exactLatitude", e.latlng.lat);
-      form.setValue("exactLongitude", e.latlng.lng);
-    });
-    
-    setMapInstance(map);
-  };
+    // Cleanup function
+    return () => {
+      if (mapToDestroy) {
+        mapToDestroy.remove();
+        setMapInstance(null);
+      }
+    };
+  }, [isOpen, userLocation, form, mapInstance]);
 
   // Create activity mutation
   const createActivityMutation = useMutation({
@@ -325,7 +366,11 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
                   <FormControl>
                     <Input 
                       placeholder="Street address or landmark (this will be visible to all)" 
-                      {...field} 
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
                   </FormControl>
                   <FormMessage />
@@ -339,7 +384,6 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
                 id="location-picker-map"
                 className="h-40 bg-blue-100 rounded-lg mb-2 relative"
                 style={{ width: '100%' }}
-                onMouseEnter={initializeMap}
               >
                 {!mapInstance && (
                   <div className="h-full flex items-center justify-center text-gray-500">
