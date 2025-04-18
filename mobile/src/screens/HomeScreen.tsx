@@ -1,281 +1,295 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Image,
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   RefreshControl,
-  ActivityIndicator
+  Image,
+  Platform,
+  FlatList,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../contexts/ThemeContext';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
-// Mock data for demo
-const ACTIVITIES = [
-  {
-    id: 1,
-    title: 'Morning Yoga in the Park',
-    type: 'Sports',
-    date: new Date(Date.now() + 86400000), // tomorrow
-    location: 'Central Park',
-    participants: 4,
-    capacity: 10,
-    image: 'https://via.placeholder.com/300x200/4A90E2/FFFFFF?text=Yoga',
-    distance: '0.8 miles'
-  },
-  {
-    id: 2,
-    title: 'Photography Walk',
-    type: 'Arts',
-    date: new Date(Date.now() + 172800000), // day after tomorrow
-    location: 'Downtown',
-    participants: 8,
-    capacity: 12,
-    image: 'https://via.placeholder.com/300x200/50C878/FFFFFF?text=Photography',
-    distance: '1.2 miles'
-  },
-  {
-    id: 3,
-    title: 'Board Games Night',
-    type: 'Social',
-    date: new Date(Date.now() + 259200000), // 3 days from now
-    location: 'The Game Café',
-    participants: 12,
-    capacity: 20,
-    image: 'https://via.placeholder.com/300x200/9370DB/FFFFFF?text=Games',
-    distance: '2.5 miles'
-  },
-];
-
-// Mock data for recommended activities
-const RECOMMENDED_ACTIVITIES = [
-  {
-    id: 4,
-    title: 'Soccer Game',
-    type: 'Sports',
-    date: new Date(Date.now() + 345600000), // 4 days from now
-    location: 'Community Field',
-    participants: 14,
-    capacity: 22,
-    image: 'https://via.placeholder.com/300x200/FF6347/FFFFFF?text=Soccer',
-    distance: '1.5 miles',
-    matchReason: 'Based on your sports interests'
-  },
-  {
-    id: 5,
-    title: 'Book Club Meeting',
-    type: 'Education',
-    date: new Date(Date.now() + 432000000), // 5 days from now
-    location: 'City Library',
-    participants: 6,
-    capacity: 15,
-    image: 'https://via.placeholder.com/300x200/20B2AA/FFFFFF?text=Books',
-    distance: '0.7 miles',
-    matchReason: 'Similar to events you joined before'
-  },
-  {
-    id: 6,
-    title: 'Cooking Class: Italian Cuisine',
-    type: 'Food',
-    date: new Date(Date.now() + 518400000), // 6 days from now
-    location: 'Culinary School',
-    participants: 8,
-    capacity: 10,
-    image: 'https://via.placeholder.com/300x200/FFA500/FFFFFF?text=Cooking',
-    distance: '3.2 miles',
-    matchReason: 'Popular in your area'
-  },
-];
-
-const formatDate = (date) => {
-  return date.toLocaleDateString('en-US', { 
-    weekday: 'short', 
-    month: 'short', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+type Activity = {
+  id: number;
+  title: string;
+  type: string;
+  date: Date;
+  location: string;
+  participants: number;
+  capacity: number;
+  image: string;
+  distance: string;
+  matchReason?: string;
 };
 
-const ActivityCard = ({ activity, onPress }) => (
-  <TouchableOpacity style={styles.card} onPress={() => onPress(activity)}>
-    <Image source={{ uri: activity.image }} style={styles.cardImage} />
-    <View style={styles.cardContent}>
-      <Text style={styles.cardTitle} numberOfLines={1}>{activity.title}</Text>
-      <View style={styles.cardDetails}>
-        <View style={styles.cardDetail}>
-          <Ionicons name="calendar-outline" size={16} color="#666" />
-          <Text style={styles.cardDetailText}>{formatDate(activity.date)}</Text>
-        </View>
-        <View style={styles.cardDetail}>
-          <Ionicons name="location-outline" size={16} color="#666" />
-          <Text style={styles.cardDetailText}>{activity.location}</Text>
-        </View>
-        <View style={styles.cardDetail}>
-          <Ionicons name="people-outline" size={16} color="#666" />
-          <Text style={styles.cardDetailText}>{activity.participants}/{activity.capacity}</Text>
-        </View>
-        <View style={styles.cardDetail}>
-          <Ionicons name="navigate-outline" size={16} color="#666" />
-          <Text style={styles.cardDetailText}>{activity.distance}</Text>
-        </View>
-      </View>
-      <View style={[styles.cardTag, { backgroundColor: getTagColor(activity.type) }]}>
-        <Text style={styles.cardTagText}>{activity.type}</Text>
-      </View>
-    </View>
-  </TouchableOpacity>
-);
-
-const RecommendedActivityCard = ({ activity, onPress }) => (
-  <TouchableOpacity style={styles.recCard} onPress={() => onPress(activity)}>
-    <Image source={{ uri: activity.image }} style={styles.recCardImage} />
-    <View style={styles.recCardContent}>
-      <Text style={styles.recCardTitle} numberOfLines={1}>{activity.title}</Text>
-      <View style={styles.recCardDetail}>
-        <Ionicons name="time-outline" size={14} color="#666" />
-        <Text style={styles.recCardDetailText}>{formatDate(activity.date)}</Text>
-      </View>
-      <View style={styles.recCardDetail}>
-        <Ionicons name="navigate-outline" size={14} color="#666" />
-        <Text style={styles.recCardDetailText}>{activity.distance}</Text>
-      </View>
-      <View style={styles.recMatchReason}>
-        <Ionicons name="thumbs-up-outline" size={14} color="#3b82f6" />
-        <Text style={styles.recMatchReasonText}>{activity.matchReason}</Text>
-      </View>
-    </View>
-  </TouchableOpacity>
-);
-
-const getTagColor = (type) => {
-  const colors = {
-    'Sports': '#4A90E2',
-    'Arts': '#50C878',
-    'Social': '#9370DB',
-    'Education': '#20B2AA',
-    'Food': '#FFA500',
-    'Music': '#FF6347',
-    'Technology': '#8A2BE2',
-    'Outdoors': '#228B22'
-  };
-  return colors[type] || '#888';
-};
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const HomeScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const { colors, isDark } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
+  const [nearbyActivities, setNearbyActivities] = useState<Activity[]>([]);
+  const [recommendedActivities, setRecommendedActivities] = useState<Activity[]>([]);
 
-  // Simulate data loading
   useEffect(() => {
-    // This would be a real API call in production
-    setTimeout(() => {
-      setActivities(ACTIVITIES);
-      setRecommendations(RECOMMENDED_ACTIVITIES);
-      setLoading(false);
-    }, 1000);
+    fetchActivities();
   }, []);
 
-  const onRefresh = React.useCallback(() => {
+  const fetchActivities = () => {
     setRefreshing(true);
-    // This would be a real API call in production
+    
+    // Simulating API call to fetch activities
     setTimeout(() => {
-      setActivities(ACTIVITIES);
-      setRecommendations(RECOMMENDED_ACTIVITIES);
+      // Sample data - would be replaced with actual API call
+      const mockNearbyActivities = [
+        {
+          id: 1,
+          title: 'Morning Yoga in the Park',
+          type: 'Sports',
+          date: new Date(2023, 4, 15, 8, 0),
+          location: 'Central Park, New York',
+          participants: 8,
+          capacity: 15,
+          image: 'https://source.unsplash.com/random/300x200/?yoga',
+          distance: '0.5 mi'
+        },
+        {
+          id: 2,
+          title: 'Street Photography Walk',
+          type: 'Arts',
+          date: new Date(2023, 4, 14, 16, 30),
+          location: 'Brooklyn Bridge, New York',
+          participants: 12,
+          capacity: 20,
+          image: 'https://source.unsplash.com/random/300x200/?photography',
+          distance: '1.2 mi'
+        },
+        {
+          id: 3,
+          title: 'Coffee & Conversation',
+          type: 'Social',
+          date: new Date(2023, 4, 16, 10, 0),
+          location: 'Blue Bottle Coffee, New York',
+          participants: 5,
+          capacity: 10,
+          image: 'https://source.unsplash.com/random/300x200/?coffee',
+          distance: '0.8 mi'
+        }
+      ];
+      
+      const mockRecommendedActivities = [
+        {
+          id: 4,
+          title: 'Tech Meetup: AI in Healthcare',
+          type: 'Technology',
+          date: new Date(2023, 4, 18, 18, 0),
+          location: 'WeWork Times Square, New York',
+          participants: 45,
+          capacity: 100,
+          image: 'https://source.unsplash.com/random/300x200/?tech',
+          distance: '2.5 mi',
+          matchReason: 'Based on your interest in AI'
+        },
+        {
+          id: 5,
+          title: 'Outdoor Rock Climbing',
+          type: 'Sports',
+          date: new Date(2023, 4, 20, 9, 0),
+          location: 'Hudson Valley, New York',
+          participants: 6,
+          capacity: 12,
+          image: 'https://source.unsplash.com/random/300x200/?climbing',
+          distance: '15 mi',
+          matchReason: 'Similar to activities you joined'
+        },
+        {
+          id: 6,
+          title: 'Painting Workshop',
+          type: 'Arts',
+          date: new Date(2023, 4, 17, 14, 0),
+          location: 'Creative Studio, Manhattan',
+          participants: 10,
+          capacity: 15,
+          image: 'https://source.unsplash.com/random/300x200/?painting',
+          distance: '1.5 mi',
+          matchReason: 'Matched to your Arts interests'
+        }
+      ];
+
+      setNearbyActivities(mockNearbyActivities);
+      setRecommendedActivities(mockRecommendedActivities);
       setRefreshing(false);
     }, 1000);
-  }, []);
-
-  const handleActivityPress = (activity) => {
-    navigation.navigate('ActivityDetails', { activityId: activity.id });
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Loading activities...</Text>
-      </SafeAreaView>
-    );
-  }
+  const onRefresh = () => {
+    fetchActivities();
+  };
+
+  const handleActivityPress = (activity: Activity) => {
+    navigation.navigate('ActivityDetail', { activityId: activity.id });
+  };
+
+  const formatDate = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return date.toLocaleString('en-US', options);
+  };
+
+  const getActivityTypeColor = (type: string) => {
+    const typeColors = {
+      Sports: '#4CAF50',
+      Arts: '#9C27B0',
+      Social: '#2196F3',
+      Education: '#FF9800',
+      Food: '#F44336',
+      Music: '#E91E63',
+      Technology: '#00BCD4',
+      Outdoors: '#8BC34A',
+    };
+    
+    return typeColors[type] || '#757575';
+  };
+
+  const renderNearbyActivity = ({ item }: { item: Activity }) => (
+    <TouchableOpacity 
+      style={[styles.activityCard, { backgroundColor: colors.card }]}
+      onPress={() => handleActivityPress(item)}
+    >
+      <Image 
+        source={{ uri: item.image }} 
+        style={styles.activityImage} 
+        resizeMode="cover"
+      />
+      <View style={styles.cardOverlay}>
+        <View style={[styles.typeTag, { backgroundColor: getActivityTypeColor(item.type) }]}>
+          <Text style={styles.typeText}>{item.type}</Text>
+        </View>
+        <Text style={[styles.distanceText, { color: colors.background }]}>
+          {item.distance}
+        </Text>
+      </View>
+      <View style={styles.cardContent}>
+        <Text style={[styles.activityTitle, { color: colors.text }]} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={[styles.activityDate, { color: colors.text }]}>
+          <Ionicons name="calendar-outline" size={14} /> {formatDate(item.date)}
+        </Text>
+        <Text style={[styles.activityLocation, { color: colors.text }]} numberOfLines={1}>
+          <Ionicons name="location-outline" size={14} /> {item.location}
+        </Text>
+        <View style={styles.participantsContainer}>
+          <Ionicons name="people-outline" size={14} color={colors.text} />
+          <Text style={[styles.participantsText, { color: colors.text }]}>
+            {item.participants}/{item.capacity} joined
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderRecommendedActivity = ({ item }: { item: Activity }) => (
+    <TouchableOpacity 
+      style={[styles.recommendedCard, { backgroundColor: colors.card }]}
+      onPress={() => handleActivityPress(item)}
+    >
+      <Image 
+        source={{ uri: item.image }} 
+        style={styles.recommendedImage} 
+        resizeMode="cover"
+      />
+      <View style={styles.cardOverlay}>
+        <View style={[styles.typeTag, { backgroundColor: getActivityTypeColor(item.type) }]}>
+          <Text style={styles.typeText}>{item.type}</Text>
+        </View>
+      </View>
+      <View style={styles.recommendedContent}>
+        <Text style={[styles.recommendedTitle, { color: colors.text }]} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={[styles.recommendedDate, { color: colors.text }]}>
+          <Ionicons name="calendar-outline" size={12} /> {formatDate(item.date)}
+        </Text>
+        <Text style={[styles.recommendedLocation, { color: colors.text }]} numberOfLines={1}>
+          <Ionicons name="location-outline" size={12} /> {item.location}
+        </Text>
+        <View style={styles.recommendedBottom}>
+          <View style={styles.participantsContainer}>
+            <Ionicons name="people-outline" size={12} color={colors.text} />
+            <Text style={[styles.recommendedParticipants, { color: colors.text }]}>
+              {item.participants}/{item.capacity}
+            </Text>
+          </View>
+          <Text style={[styles.distanceTag, { color: colors.primary }]}>{item.distance}</Text>
+        </View>
+        {item.matchReason && (
+          <View style={[styles.matchReasonTag, { backgroundColor: colors.primary + '20' }]}>
+            <Ionicons name="thumbs-up-outline" size={12} color={colors.primary} />
+            <Text style={[styles.matchReasonText, { color: colors.primary }]}>
+              {item.matchReason}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Connect</Text>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="notifications-outline" size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={20} color="#999" style={styles.searchIcon} />
-          <Text style={styles.searchPlaceholder}>Search activities...</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Nearby Activities</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-          >
-            {activities.map(activity => (
-              <ActivityCard 
-                key={activity.id} 
-                activity={activity} 
-                onPress={handleActivityPress} 
-              />
-            ))}
-            <TouchableOpacity style={styles.viewMoreButton}>
-              <Text style={styles.viewMoreText}>View All</Text>
-              <Ionicons name="arrow-forward" size={16} color="#3b82f6" />
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-
-        <View style={styles.recommendationsSection}>
-          <Text style={styles.sectionTitle}>Recommended For You</Text>
-          <Text style={styles.sectionSubtitle}>Based on your interests and history</Text>
-          
-          <View style={styles.recommendationsGrid}>
-            {recommendations.map(activity => (
-              <RecommendedActivityCard 
-                key={activity.id} 
-                activity={activity} 
-                onPress={handleActivityPress} 
-              />
-            ))}
+          <View>
+            <Text style={[styles.greeting, { color: colors.text }]}>Hello!</Text>
+            <Text style={[styles.subtitle, { color: colors.text }]}>Find activities nearby</Text>
           </View>
-
-          <TouchableOpacity style={styles.viewAllButton}>
-            <Text style={styles.viewAllText}>View All Recommendations</Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
+          <TouchableOpacity
+            style={[styles.createButton, { backgroundColor: colors.primary }]}
+            onPress={() => navigation.navigate('CreateActivity')}
+          >
+            <Ionicons name="add" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <View style={styles.categoriesContainer}>
-            {['Sports', 'Arts', 'Social', 'Education', 'Food', 'Music', 'Technology', 'Outdoors'].map(category => (
-              <TouchableOpacity 
-                key={category} 
-                style={[styles.categoryButton, { backgroundColor: getTagColor(category) + '20' }]}
-              >
-                <Text style={[styles.categoryText, { color: getTagColor(category) }]}>{category}</Text>
-              </TouchableOpacity>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Nearby Activities</Text>
+          <FlatList
+            horizontal
+            data={nearbyActivities}
+            renderItem={renderNearbyActivity}
+            keyExtractor={(item) => item.id.toString()}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.nearbyList}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended For You</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.text }]}>
+            Based on your interests and past activities
+          </Text>
+          <View style={styles.recommendedGrid}>
+            {recommendedActivities.map((item) => (
+              <View key={item.id} style={styles.recommendedWrapper}>
+                {renderRecommendedActivity({ item })}
+              </View>
             ))}
           </View>
         </View>
@@ -287,226 +301,201 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-  },
-  scrollView: {
-    flex: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingTop: 8,
+    paddingBottom: 16,
   },
-  headerTitle: {
-    fontSize: 24,
+  greeting: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#3b82f6',
   },
-  headerButton: {
-    padding: 8,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#eee',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchPlaceholder: {
-    color: '#999',
+  subtitle: {
     fontSize: 16,
+    opacity: 0.7,
+  },
+  createButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   section: {
-    marginVertical: 16,
     paddingHorizontal: 16,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
+    marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
+    opacity: 0.7,
     marginBottom: 16,
-    marginTop: -8,
   },
-  horizontalScroll: {
-    paddingBottom: 8,
+  nearbyList: {
+    paddingRight: 16,
+    paddingVertical: 8,
   },
-  card: {
+  activityCard: {
     width: 280,
-    backgroundColor: '#fff',
     borderRadius: 12,
+    marginLeft: 16,
+    marginVertical: 8,
     overflow: 'hidden',
-    marginRight: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  cardImage: {
+  activityImage: {
     width: '100%',
     height: 140,
-    backgroundColor: '#eee',
+  },
+  cardOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 12,
+  },
+  typeTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  typeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  distanceText: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    color: 'white',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    fontSize: 12,
   },
   cardContent: {
     padding: 12,
   },
-  cardTitle: {
+  activityTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
+    marginBottom: 6,
   },
-  cardDetails: {
+  activityDate: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  activityLocation: {
+    fontSize: 14,
     marginBottom: 8,
   },
-  cardDetail: {
+  participantsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
   },
-  cardDetailText: {
+  participantsText: {
     fontSize: 14,
-    color: '#666',
-    marginLeft: 6,
+    marginLeft: 4,
   },
-  cardTag: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  cardTagText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  viewMoreButton: {
-    width: 100,
-    height: 230,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  viewMoreText: {
-    fontSize: 14,
-    color: '#3b82f6',
-    marginBottom: 4,
-  },
-  recommendationsSection: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    backgroundColor: '#f0f4ff',
-  },
-  recommendationsGrid: {
+  recommendedGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    marginHorizontal: -8,
   },
-  recCard: {
-    width: '48%',
-    backgroundColor: '#fff',
+  recommendedWrapper: {
+    width: '50%',
+    paddingHorizontal: 8,
+    marginBottom: 16,
+  },
+  recommendedCard: {
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  recCardImage: {
+  recommendedImage: {
     width: '100%',
     height: 100,
-    backgroundColor: '#eee',
   },
-  recCardContent: {
+  recommendedContent: {
     padding: 10,
   },
-  recCardTitle: {
+  recommendedTitle: {
     fontSize: 14,
     fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  recommendedDate: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  recommendedLocation: {
+    fontSize: 12,
     marginBottom: 6,
-    color: '#333',
   },
-  recCardDetail: {
+  recommendedBottom: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 3,
   },
-  recCardDetailText: {
+  recommendedParticipants: {
     fontSize: 12,
-    color: '#666',
     marginLeft: 4,
   },
-  recMatchReason: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  recMatchReasonText: {
+  distanceTag: {
     fontSize: 12,
-    color: '#3b82f6',
-    marginLeft: 4,
-  },
-  viewAllButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#3b82f6',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  viewAllText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginRight: 10,
-    marginBottom: 10,
-  },
-  categoryText: {
     fontWeight: '500',
+  },
+  matchReasonTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  matchReasonText: {
+    fontSize: 10,
+    marginLeft: 4,
   },
 });
 

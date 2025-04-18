@@ -1,132 +1,66 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Dimensions, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
   ActivityIndicator,
-  Animated,
   Platform,
-  ScrollView
+  FlatList,
+  Modal,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Callout, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
+import MapView, { Marker, Callout, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../contexts/ThemeContext';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
-// Sample activities data - this would come from an API
-const ACTIVITIES = [
-  {
-    id: 1,
-    title: 'Morning Yoga in the Park',
-    type: 'Sports',
-    coordinate: { latitude: 40.7128, longitude: -74.006 },
-    date: new Date(Date.now() + 86400000), // tomorrow
-    location: 'Central Park',
-    participants: 4,
-    capacity: 10,
-  },
-  {
-    id: 2,
-    title: 'Photography Walk',
-    type: 'Arts',
-    coordinate: { latitude: 40.7135, longitude: -74.0085 },
-    date: new Date(Date.now() + 172800000), // day after tomorrow
-    location: 'Downtown',
-    participants: 8,
-    capacity: 12,
-  },
-  {
-    id: 3,
-    title: 'Board Games Night',
-    type: 'Social',
-    coordinate: { latitude: 40.7145, longitude: -74.0075 },
-    date: new Date(Date.now() + 259200000), // 3 days from now
-    location: 'The Game Café',
-    participants: 12,
-    capacity: 20,
-  },
-  {
-    id: 4,
-    title: 'Soccer Game',
-    type: 'Sports',
-    coordinate: { latitude: 40.7115, longitude: -74.0095 },
-    date: new Date(Date.now() + 345600000), // 4 days from now
-    location: 'Community Field',
-    participants: 14,
-    capacity: 22,
-  },
-  {
-    id: 5,
-    title: 'Book Club Meeting',
-    type: 'Education',
-    coordinate: { latitude: 40.7138, longitude: -74.0065 },
-    date: new Date(Date.now() + 432000000), // 5 days from now
-    location: 'City Library',
-    participants: 6,
-    capacity: 15,
-  },
-  {
-    id: 6,
-    title: 'Cooking Class: Italian Cuisine',
-    type: 'Food',
-    coordinate: { latitude: 40.7152, longitude: -74.0058 },
-    date: new Date(Date.now() + 518400000), // 6 days from now
-    location: 'Culinary School',
-    participants: 8,
-    capacity: 10,
-  },
-];
+type MapScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
-const formatDate = (date) => {
-  return date.toLocaleDateString('en-US', { 
-    weekday: 'short', 
-    month: 'short', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-
-const getMarkerColor = (type) => {
-  const colors = {
-    'Sports': '#4A90E2',
-    'Arts': '#50C878',
-    'Social': '#9370DB',
-    'Education': '#20B2AA',
-    'Food': '#FFA500',
-    'Music': '#FF6347',
-    'Technology': '#8A2BE2',
-    'Outdoors': '#228B22'
+type ActivityMarker = {
+  id: number;
+  title: string;
+  type: string;
+  coordinate: {
+    latitude: number;
+    longitude: number;
   };
-  return colors[type] || '#888';
+  date: Date;
+  location: string;
+  participants: number;
+  capacity: number;
 };
+
+const { width, height } = Dimensions.get('window');
+const ASPECT_RATIO = width / height;
+const LATITUDE_DELTA = 0.0922;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 const MapScreen = () => {
-  const navigation = useNavigation();
-  const [region, setRegion] = useState({
+  const navigation = useNavigation<MapScreenNavigationProp>();
+  const { colors, isDark } = useTheme();
+  const mapRef = useRef<MapView>(null);
+  
+  const [region, setRegion] = useState<Region>({
     latitude: 40.7128,
-    longitude: -74.006,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
-  const [userLocation, setUserLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState([]);
-  const [selectedActivity, setSelectedActivity] = useState(null);
-  const [filterVisible, setFilterVisible] = useState(false);
-  const [filters, setFilters] = useState({
-    radius: 5, // miles
-    types: [],
+    longitude: -74.0060,
+    latitudeDelta: LATITUDE_DELTA,
+    longitudeDelta: LONGITUDE_DELTA,
   });
   
-  const mapRef = useRef(null);
-  const filterHeight = useRef(new Animated.Value(0)).current;
+  const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [activities, setActivities] = useState<ActivityMarker[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityMarker | null>(null);
+  const [showActivityDetails, setShowActivityDetails] = useState(false);
 
-  // Get user location and activities data
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -137,103 +71,183 @@ const MapScreen = () => {
       }
 
       try {
-        let location = await Location.getCurrentPositionAsync({});
-        const userLoc = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
+        setLoading(true);
+        let userLocation = await Location.getCurrentPositionAsync({});
+        
+        // Update region to user's location
+        const userRegion = {
+          latitude: userLocation.coords.latitude,
+          longitude: userLocation.coords.longitude,
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA,
         };
-        setUserLocation(userLoc);
-        setRegion({
-          ...userLoc,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
+        
+        setRegion(userRegion);
+        setLocation({
+          latitude: userLocation.coords.latitude,
+          longitude: userLocation.coords.longitude,
         });
         
-        // This would be a real API call in production
-        // Simulating a fetch with timeout
-        setTimeout(() => {
-          setActivities(ACTIVITIES);
-          setLoading(false);
-        }, 1000);
+        // Fetch activities near the user's location
+        fetchActivitiesNearLocation(userLocation.coords.latitude, userLocation.coords.longitude);
       } catch (error) {
+        console.error('Error getting location', error);
         setErrorMsg('Could not fetch location');
         setLoading(false);
       }
     })();
   }, []);
 
-  const toggleFilter = () => {
-    if (filterVisible) {
-      Animated.timing(filterHeight, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: false,
-      }).start(() => setFilterVisible(false));
-    } else {
-      setFilterVisible(true);
-      Animated.timing(filterHeight, {
-        toValue: 200,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }
+  const fetchActivitiesNearLocation = (latitude: number, longitude: number) => {
+    // Simulating API call
+    setTimeout(() => {
+      // Sample data - would be replaced with actual API call
+      const mockActivities = [
+        {
+          id: 1,
+          title: 'Morning Yoga in the Park',
+          type: 'Sports',
+          coordinate: {
+            latitude: latitude + 0.01,
+            longitude: longitude + 0.005,
+          },
+          date: new Date(2023, 4, 15, 8, 0),
+          location: 'Central Park',
+          participants: 8,
+          capacity: 15,
+        },
+        {
+          id: 2,
+          title: 'Street Photography Walk',
+          type: 'Arts',
+          coordinate: {
+            latitude: latitude - 0.005,
+            longitude: longitude + 0.01,
+          },
+          date: new Date(2023, 4, 14, 16, 30),
+          location: 'Brooklyn Bridge',
+          participants: 12,
+          capacity: 20,
+        },
+        {
+          id: 3,
+          title: 'Coffee & Conversation',
+          type: 'Social',
+          coordinate: {
+            latitude: latitude - 0.01,
+            longitude: longitude - 0.005,
+          },
+          date: new Date(2023, 4, 16, 10, 0),
+          location: 'Blue Bottle Coffee',
+          participants: 5,
+          capacity: 10,
+        },
+        {
+          id: 4,
+          title: 'Tech Meetup: AI in Healthcare',
+          type: 'Technology',
+          coordinate: {
+            latitude: latitude + 0.008,
+            longitude: longitude - 0.01,
+          },
+          date: new Date(2023, 4, 18, 18, 0),
+          location: 'WeWork Times Square',
+          participants: 45,
+          capacity: 100,
+        },
+        {
+          id: 5,
+          title: 'Outdoor Rock Climbing',
+          type: 'Sports',
+          coordinate: {
+            latitude: latitude + 0.02,
+            longitude: longitude + 0.015,
+          },
+          date: new Date(2023, 4, 20, 9, 0),
+          location: 'Hudson Valley',
+          participants: 6,
+          capacity: 12,
+        },
+      ];
+      
+      setActivities(mockActivities);
+      setLoading(false);
+    }, 1000);
   };
 
-  const handleMarkerPress = (activity) => {
+  const handleActivityMarkerPress = (activity: ActivityMarker) => {
     setSelectedActivity(activity);
+    setShowActivityDetails(true);
   };
 
-  const handleInfoPress = (activity) => {
-    navigation.navigate('ActivityDetails', { activityId: activity.id });
+  const handleViewActivityDetails = (activity: ActivityMarker) => {
+    navigation.navigate('ActivityDetail', { activityId: activity.id });
   };
 
-  const zoomToUserLocation = () => {
-    if (userLocation && mapRef.current) {
+  const centerMapOnMarker = (activity: ActivityMarker) => {
+    if (mapRef.current) {
       mapRef.current.animateToRegion({
-        ...userLocation,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      });
+        ...activity.coordinate,
+        latitudeDelta: LATITUDE_DELTA / 2,
+        longitudeDelta: LONGITUDE_DELTA / 2,
+      }, 500);
     }
   };
 
-  const toggleTypeFilter = (type) => {
-    if (filters.types.includes(type)) {
-      setFilters({
-        ...filters,
-        types: filters.types.filter(t => t !== type)
-      });
+  const handleFilterPress = (type: string) => {
+    if (selectedFilter === type) {
+      setSelectedFilter(null);
+      // Reset to show all activities
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(region, 500);
+      }
     } else {
-      setFilters({
-        ...filters,
-        types: [...filters.types, type]
-      });
+      setSelectedFilter(type);
+      
+      // Center map on the first matching activity
+      const matchingActivities = activities.filter(a => a.type === type);
+      if (matchingActivities.length > 0) {
+        const firstMatch = matchingActivities[0];
+        centerMapOnMarker(firstMatch);
+      }
     }
   };
 
-  const filteredActivities = activities.filter(activity => {
-    // Filter by type if any types are selected
-    if (filters.types.length > 0 && !filters.types.includes(activity.type)) {
-      return false;
-    }
-    
-    // Filter by radius (implemented in miles)
-    if (userLocation) {
-      const distance = calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        activity.coordinate.latitude,
-        activity.coordinate.longitude
-      );
-      return distance <= filters.radius;
-    }
-    
-    return true;
-  });
+  const getFilteredActivities = () => {
+    if (!selectedFilter) return activities;
+    return activities.filter(activity => activity.type === selectedFilter);
+  };
 
-  // Calculate distance between two coordinates in miles
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 3958.8; // Earth's radius in miles
+  const getActivityTypeColor = (type: string) => {
+    const typeColors = {
+      Sports: '#4CAF50',
+      Arts: '#9C27B0',
+      Social: '#2196F3',
+      Education: '#FF9800',
+      Food: '#F44336',
+      Music: '#E91E63',
+      Technology: '#00BCD4',
+      Outdoors: '#8BC34A',
+    };
+    
+    return typeColors[type] || '#757575';
+  };
+
+  const formatDate = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return date.toLocaleString('en-US', options);
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    
+    const R = 6371; // Radius of the earth in km
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
     const a =
@@ -241,151 +255,354 @@ const MapScreen = () => {
       Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in miles
+    const distance = R * c; // Distance in km
+    
+    return formatDistance(distance);
   };
 
-  const deg2rad = (deg) => {
+  const deg2rad = (deg: number) => {
     return deg * (Math.PI / 180);
   };
 
-  // Convert miles to meters for circle radius
-  const milesToMeters = (miles) => {
-    return miles * 1609.34;
+  const formatDistance = (miles: number) => {
+    if (miles < 1) {
+      // Convert to feet
+      const feet = Math.round(miles * 5280);
+      return `${feet} ft`;
+    } else {
+      return `${miles.toFixed(1)} mi`;
+    }
   };
 
-  if (loading) {
+  const renderCustomMarker = (activity: ActivityMarker) => {
+    const markerColor = getActivityTypeColor(activity.type);
+    
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Loading map...</Text>
-      </SafeAreaView>
+      <Marker
+        key={activity.id}
+        coordinate={activity.coordinate}
+        onPress={() => handleActivityMarkerPress(activity)}
+      >
+        <View style={styles.customMarker}>
+          <View style={[styles.markerOuter, { backgroundColor: markerColor }]}>
+            <View style={[styles.markerInner, { backgroundColor: isDark ? colors.card : 'white' }]}>
+              <Ionicons 
+                name={getIconForType(activity.type)} 
+                size={16} 
+                color={markerColor} 
+              />
+            </View>
+          </View>
+          <View style={[styles.markerTriangle, { borderTopColor: markerColor }]} />
+        </View>
+      </Marker>
     );
-  }
+  };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          provider={PROVIDER_GOOGLE}
-          style={styles.map}
-          region={region}
-          onRegionChangeComplete={setRegion}
-          showsUserLocation
-          showsMyLocationButton={false}
-        >
-          {userLocation && (
-            <Circle
-              center={userLocation}
-              radius={milesToMeters(filters.radius)}
-              fillColor="rgba(59, 130, 246, 0.1)"
-              strokeColor="rgba(59, 130, 246, 0.5)"
-              strokeWidth={1}
-            />
-          )}
-          
-          {filteredActivities.map((activity) => (
-            <Marker
-              key={activity.id}
-              coordinate={activity.coordinate}
-              onPress={() => handleMarkerPress(activity)}
-              pinColor={getMarkerColor(activity.type)}
-            >
-              <Callout tooltip onPress={() => handleInfoPress(activity)}>
-                <View style={styles.callout}>
-                  <Text style={styles.calloutTitle}>{activity.title}</Text>
-                  <Text style={styles.calloutDetail}>
-                    <Ionicons name="calendar-outline" size={14} color="#666" /> {formatDate(activity.date)}
-                  </Text>
-                  <Text style={styles.calloutDetail}>
-                    <Ionicons name="location-outline" size={14} color="#666" /> {activity.location}
-                  </Text>
-                  <Text style={styles.calloutDetail}>
-                    <Ionicons name="people-outline" size={14} color="#666" /> {activity.participants}/{activity.capacity}
-                  </Text>
-                  <TouchableOpacity style={styles.calloutButton}>
-                    <Text style={styles.calloutButtonText}>View Details</Text>
-                  </TouchableOpacity>
-                </View>
-              </Callout>
-            </Marker>
-          ))}
-        </MapView>
+  const getIconForType = (type: string) => {
+    const typeIcons = {
+      Sports: 'basketball-outline',
+      Arts: 'color-palette-outline',
+      Social: 'people-outline',
+      Education: 'school-outline',
+      Food: 'restaurant-outline',
+      Music: 'musical-notes-outline',
+      Technology: 'hardware-chip-outline',
+      Outdoors: 'leaf-outline',
+    };
+    
+    return typeIcons[type] || 'pin-outline';
+  };
 
-        <View style={styles.mapOverlay}>
-          <TouchableOpacity 
-            style={styles.mapButton} 
-            onPress={toggleFilter}
-          >
-            <Ionicons name="options-outline" size={24} color="#333" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.mapButton} 
-            onPress={zoomToUserLocation}
-          >
-            <Ionicons name="locate-outline" size={24} color="#333" />
+  const renderActivityCard = ({ item }: { item: ActivityMarker }) => (
+    <TouchableOpacity 
+      style={[styles.activityCard, { backgroundColor: colors.card }]}
+      onPress={() => handleViewActivityDetails(item)}
+    >
+      <View style={[styles.cardColorBar, { backgroundColor: getActivityTypeColor(item.type) }]} />
+      <View style={styles.cardContent}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.typeTag, { backgroundColor: getActivityTypeColor(item.type) }]}>
+            <Text style={styles.typeText}>{item.type}</Text>
+          </View>
+          <TouchableOpacity onPress={() => centerMapOnMarker(item)}>
+            <Ionicons name="location" size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
-        {filterVisible && (
-          <Animated.View style={[styles.filterContainer, { height: filterHeight }]}>
-            <Text style={styles.filterTitle}>Filter Activities</Text>
-            
-            <View style={styles.radiusContainer}>
-              <Text style={styles.filterLabel}>Radius: {filters.radius} miles</Text>
-              <View style={styles.radiusSlider}>
-                <TouchableOpacity 
-                  style={styles.radiusButton}
-                  onPress={() => setFilters({...filters, radius: Math.max(1, filters.radius - 1)})}
-                >
-                  <Text>-</Text>
-                </TouchableOpacity>
-                <View style={styles.radiusTrack}>
-                  <View style={[styles.radiusFill, { width: `${(filters.radius / 10) * 100}%` }]} />
-                </View>
-                <TouchableOpacity 
-                  style={styles.radiusButton}
-                  onPress={() => setFilters({...filters, radius: Math.min(10, filters.radius + 1)})}
-                >
-                  <Text>+</Text>
-                </TouchableOpacity>
+        <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+          {item.title}
+        </Text>
+        
+        <Text style={[styles.cardDate, { color: colors.text }]}>
+          <Ionicons name="calendar-outline" size={14} /> {formatDate(item.date)}
+        </Text>
+        
+        <Text style={[styles.cardLocation, { color: colors.text }]} numberOfLines={1}>
+          <Ionicons name="location-outline" size={14} /> {item.location}
+          {location && (
+            <Text style={{ color: colors.primary }}>
+              {' • '}
+              {calculateDistance(
+                location.latitude, 
+                location.longitude, 
+                item.coordinate.latitude, 
+                item.coordinate.longitude
+              )}
+            </Text>
+          )}
+        </Text>
+        
+        <View style={styles.cardFooter}>
+          <View style={styles.participantsContainer}>
+            <Ionicons name="people-outline" size={14} color={colors.text} />
+            <Text style={[styles.participantsText, { color: colors.text }]}>
+              {item.participants}/{item.capacity}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.viewButton, { backgroundColor: colors.primary }]}
+            onPress={() => handleViewActivityDetails(item)}
+          >
+            <Text style={styles.viewButtonText}>View</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderActivityModal = () => (
+    <Modal
+      visible={showActivityDetails}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowActivityDetails(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Activity Details</Text>
+            <TouchableOpacity onPress={() => setShowActivityDetails(false)}>
+              <Ionicons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          
+          {selectedActivity && (
+            <View style={styles.activityDetails}>
+              <View style={[styles.detailsTypeTag, { backgroundColor: getActivityTypeColor(selectedActivity.type) }]}>
+                <Text style={styles.detailsTypeText}>{selectedActivity.type}</Text>
               </View>
+              
+              <Text style={[styles.detailsTitle, { color: colors.text }]}>
+                {selectedActivity.title}
+              </Text>
+              
+              <Text style={[styles.detailsDate, { color: colors.text }]}>
+                <Ionicons name="calendar-outline" size={16} /> {formatDate(selectedActivity.date)}
+              </Text>
+              
+              <Text style={[styles.detailsLocation, { color: colors.text }]}>
+                <Ionicons name="location-outline" size={16} /> {selectedActivity.location}
+                {location && (
+                  <Text style={{ color: colors.primary }}>
+                    {' • '}
+                    {calculateDistance(
+                      location.latitude, 
+                      location.longitude, 
+                      selectedActivity.coordinate.latitude, 
+                      selectedActivity.coordinate.longitude
+                    )}
+                  </Text>
+                )}
+              </Text>
+              
+              <View style={styles.detailsParticipants}>
+                <Ionicons name="people-outline" size={16} color={colors.text} />
+                <Text style={[styles.detailsParticipantsText, { color: colors.text }]}>
+                  {selectedActivity.participants}/{selectedActivity.capacity} participants
+                </Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={[styles.detailsButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setShowActivityDetails(false);
+                  navigation.navigate('ActivityDetail', { activityId: selectedActivity.id });
+                }}
+              >
+                <Text style={styles.detailsButtonText}>View Full Details</Text>
+              </TouchableOpacity>
             </View>
-            
-            <Text style={styles.filterLabel}>Activity Types:</Text>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading map...</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.filterContainer}>
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false}
-              style={styles.typeContainer}
+              contentContainerStyle={styles.filterScrollContent}
             >
-              {['Sports', 'Arts', 'Social', 'Education', 'Food', 'Music'].map(type => (
-                <TouchableOpacity 
-                  key={type}
+              <TouchableOpacity
+                style={[
+                  styles.filterButton,
+                  selectedFilter === 'Sports' && styles.filterButtonActive,
+                  selectedFilter === 'Sports' && { backgroundColor: getActivityTypeColor('Sports') + '20' }
+                ]}
+                onPress={() => handleFilterPress('Sports')}
+              >
+                <Ionicons 
+                  name="basketball-outline" 
+                  size={18} 
+                  color={selectedFilter === 'Sports' ? getActivityTypeColor('Sports') : colors.text} 
+                />
+                <Text 
                   style={[
-                    styles.typeButton,
-                    filters.types.includes(type) && { backgroundColor: getMarkerColor(type) }
+                    styles.filterText, 
+                    { color: selectedFilter === 'Sports' ? getActivityTypeColor('Sports') : colors.text }
                   ]}
-                  onPress={() => toggleTypeFilter(type)}
                 >
-                  <Text 
-                    style={[
-                      styles.typeText,
-                      filters.types.includes(type) && { color: '#fff' }
-                    ]}
-                  >
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                  Sports
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.filterButton,
+                  selectedFilter === 'Arts' && styles.filterButtonActive,
+                  selectedFilter === 'Arts' && { backgroundColor: getActivityTypeColor('Arts') + '20' }
+                ]}
+                onPress={() => handleFilterPress('Arts')}
+              >
+                <Ionicons 
+                  name="color-palette-outline" 
+                  size={18} 
+                  color={selectedFilter === 'Arts' ? getActivityTypeColor('Arts') : colors.text} 
+                />
+                <Text 
+                  style={[
+                    styles.filterText, 
+                    { color: selectedFilter === 'Arts' ? getActivityTypeColor('Arts') : colors.text }
+                  ]}
+                >
+                  Arts
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.filterButton,
+                  selectedFilter === 'Social' && styles.filterButtonActive,
+                  selectedFilter === 'Social' && { backgroundColor: getActivityTypeColor('Social') + '20' }
+                ]}
+                onPress={() => handleFilterPress('Social')}
+              >
+                <Ionicons 
+                  name="people-outline" 
+                  size={18} 
+                  color={selectedFilter === 'Social' ? getActivityTypeColor('Social') : colors.text} 
+                />
+                <Text 
+                  style={[
+                    styles.filterText, 
+                    { color: selectedFilter === 'Social' ? getActivityTypeColor('Social') : colors.text }
+                  ]}
+                >
+                  Social
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.filterButton,
+                  selectedFilter === 'Technology' && styles.filterButtonActive,
+                  selectedFilter === 'Technology' && { backgroundColor: getActivityTypeColor('Technology') + '20' }
+                ]}
+                onPress={() => handleFilterPress('Technology')}
+              >
+                <Ionicons 
+                  name="hardware-chip-outline" 
+                  size={18} 
+                  color={selectedFilter === 'Technology' ? getActivityTypeColor('Technology') : colors.text} 
+                />
+                <Text 
+                  style={[
+                    styles.filterText, 
+                    { color: selectedFilter === 'Technology' ? getActivityTypeColor('Technology') : colors.text }
+                  ]}
+                >
+                  Technology
+                </Text>
+              </TouchableOpacity>
             </ScrollView>
+          </View>
+          
+          <View style={styles.mapContainer}>
+            <MapView
+              ref={mapRef}
+              style={styles.map}
+              provider={PROVIDER_GOOGLE}
+              initialRegion={region}
+              customMapStyle={isDark ? darkMapStyle : []}
+              showsUserLocation
+              showsMyLocationButton
+              showsCompass
+              loadingEnabled
+            >
+              {getFilteredActivities().map(activity => renderCustomMarker(activity))}
+            </MapView>
             
-            <TouchableOpacity style={styles.applyButton} onPress={toggleFilter}>
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-      </View>
+            {location && (
+              <TouchableOpacity
+                style={[styles.recenterButton, { backgroundColor: colors.card }]}
+                onPress={() => {
+                  if (mapRef.current) {
+                    mapRef.current.animateToRegion({
+                      latitude: location.latitude,
+                      longitude: location.longitude,
+                      latitudeDelta: LATITUDE_DELTA,
+                      longitudeDelta: LONGITUDE_DELTA,
+                    }, 500);
+                  }
+                }}
+              >
+                <Ionicons name="locate" size={24} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <View style={styles.bottomSheet}>
+            <View style={[styles.bottomSheetHandle, { backgroundColor: colors.border }]} />
+            <View style={[styles.bottomSheetContent, { backgroundColor: colors.background }]}>
+              <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>
+                {getFilteredActivities().length} {selectedFilter ? `${selectedFilter} ` : ''}Activities Nearby
+              </Text>
+              
+              <FlatList
+                data={getFilteredActivities()}
+                renderItem={renderActivityCard}
+                keyExtractor={(item) => item.id.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.activityList}
+              />
+            </View>
+          </View>
+          
+          {renderActivityModal()}
+        </>
+      )}
     </SafeAreaView>
   );
 };
@@ -393,7 +610,6 @@ const MapScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   loadingContainer: {
     flex: 1,
@@ -401,153 +617,488 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 16,
     fontSize: 16,
-    color: '#666',
+  },
+  filterContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 10,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    paddingHorizontal: 8,
+  },
+  filterScrollContent: {
+    paddingHorizontal: 8,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  filterButtonActive: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
   },
   mapContainer: {
     flex: 1,
-    position: 'relative',
   },
   map: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
+    ...StyleSheet.absoluteFillObject,
   },
-  mapOverlay: {
+  recenterButton: {
     position: 'absolute',
-    top: 16,
+    bottom: 190,
     right: 16,
-    flexDirection: 'column',
-  },
-  mapButton: {
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  callout: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 10,
-    width: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  calloutTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  calloutDetail: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-    flexDirection: 'row',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  calloutButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    marginTop: 6,
-    alignItems: 'center',
-  },
-  calloutButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  filterContainer: {
+  bottomSheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
-    padding: 16,
+    height: 180,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
-  filterTitle: {
-    fontSize: 18,
+  bottomSheetHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#ddd',
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  bottomSheetContent: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  bottomSheetTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
+    marginHorizontal: 16,
     marginBottom: 12,
-    color: '#333',
   },
-  filterLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+  activityList: {
+    paddingHorizontal: 8,
+  },
+  activityCard: {
+    width: 300,
+    borderRadius: 12,
+    marginHorizontal: 8,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  cardColorBar: {
+    width: 6,
+  },
+  cardContent: {
+    flex: 1,
+    padding: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
-    color: '#555',
   },
-  radiusContainer: {
-    marginBottom: 16,
+  typeTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  radiusSlider: {
+  typeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  cardDate: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  cardLocation: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  participantsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  radiusButton: {
-    backgroundColor: '#eee',
-    borderRadius: 20,
-    width: 30,
-    height: 30,
+  participantsText: {
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  viewButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  viewButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  customMarker: {
+    alignItems: 'center',
+  },
+  markerOuter: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  radiusTrack: {
-    flex: 1,
-    height: 6,
-    backgroundColor: '#eee',
-    borderRadius: 3,
-    marginHorizontal: 10,
-  },
-  radiusFill: {
-    height: 6,
-    backgroundColor: '#3b82f6',
-    borderRadius: 3,
-  },
-  typeContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  typeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    backgroundColor: '#eee',
-  },
-  typeText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  applyButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 12,
-    borderRadius: 8,
+  markerInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  applyButtonText: {
-    color: '#fff',
+  markerTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: -4,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  activityDetails: {
+    marginBottom: 16,
+  },
+  detailsTypeTag: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  detailsTypeText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  detailsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  detailsDate: {
     fontSize: 16,
-    fontWeight: '500',
+    marginBottom: 8,
+  },
+  detailsLocation: {
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  detailsParticipants: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  detailsParticipantsText: {
+    fontSize: 16,
+    marginLeft: 6,
+  },
+  detailsButton: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  detailsButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
+
+// Dark mode map style
+const darkMapStyle = [
+  {
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#212121"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.icon",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#757575"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#212121"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#757575"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.country",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#9e9e9e"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.locality",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#bdbdbd"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#757575"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#181818"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#616161"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#1b1b1b"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry.fill",
+    "stylers": [
+      {
+        "color": "#2c2c2c"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#8a8a8a"
+      }
+    ]
+  },
+  {
+    "featureType": "road.arterial",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#373737"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#3c3c3c"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway.controlled_access",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#4e4e4e"
+      }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#616161"
+      }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#757575"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#000000"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#3d3d3d"
+      }
+    ]
+  }
+];
 
 export default MapScreen;

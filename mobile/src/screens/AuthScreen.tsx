@@ -6,213 +6,316 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  ActivityIndicator,
-  Alert
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../contexts/ThemeContext';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+
+type AuthScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const AuthScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<AuthScreenNavigationProp>();
+  const { colors, isDark } = useTheme();
+  
   const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const handleAuth = () => {
-    // Basic validation
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
-      return;
-    }
-    
-    if (!password.trim()) {
-      Alert.alert('Error', 'Please enter your password');
-      return;
-    }
-    
-    if (!isLogin && !username.trim()) {
-      Alert.alert('Error', 'Please enter a username');
-      return;
-    }
-    
-    setLoading(true);
-    
-    // This would be a real authentication API call in production
-    setTimeout(() => {
-      setLoading(false);
-      
-      // Navigate to the main app on successful auth
-      if (isLogin) {
-        // Login success
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'MainApp' }],
-        });
-      } else {
-        // Registration success
-        Alert.alert(
-          'Success',
-          'Your account has been created!',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'MainApp' }],
-                });
-              }
-            }
-          ]
-        );
+    // Input validation
+    if (isLogin) {
+      if (!username.trim() || !password.trim()) {
+        Alert.alert('Error', 'Please fill in all fields');
+        return;
       }
-    }, 1500);
-  };
-  
-  const handleSocialAuth = (provider) => {
+    } else {
+      if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+        Alert.alert('Error', 'Please fill in all fields');
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        Alert.alert('Error', 'Passwords do not match');
+        return;
+      }
+      
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        Alert.alert('Error', 'Please enter a valid email address');
+        return;
+      }
+      
+      // Password strength validation
+      if (password.length < 8) {
+        Alert.alert('Error', 'Password must be at least 8 characters long');
+        return;
+      }
+    }
+    
     setLoading(true);
     
-    // This would be a real social auth integration in production
+    // Simulating authentication API call
     setTimeout(() => {
       setLoading(false);
       
-      // Navigate to the main app on successful auth
+      // Navigate to main app after successful authentication
       navigation.reset({
         index: 0,
-        routes: [{ name: 'MainApp' }],
+        routes: [{ name: 'Main' }],
       });
     }, 1500);
   };
   
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
+        style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>Connect</Text>
-            <Text style={styles.tagline}>Find and join activities near you</Text>
+            <Image 
+              source={require('../assets/icon.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={[styles.appName, { color: colors.text }]}>Connect</Text>
+            <Text style={[styles.tagline, { color: colors.inactive }]}>
+              Discover activities. Meet new people.
+            </Text>
+          </View>
+          
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[
+                styles.tabButton,
+                isLogin && styles.activeTabButton,
+                isLogin && { borderBottomColor: colors.primary }
+              ]}
+              onPress={() => setIsLogin(true)}
+            >
+              <Text 
+                style={[
+                  styles.tabText, 
+                  { color: isLogin ? colors.primary : colors.inactive }
+                ]}
+              >
+                Login
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.tabButton,
+                !isLogin && styles.activeTabButton,
+                !isLogin && { borderBottomColor: colors.primary }
+              ]}
+              onPress={() => setIsLogin(false)}
+            >
+              <Text 
+                style={[
+                  styles.tabText, 
+                  { color: !isLogin ? colors.primary : colors.inactive }
+                ]}
+              >
+                Sign Up
+              </Text>
+            </TouchableOpacity>
           </View>
           
           <View style={styles.formContainer}>
-            <View style={styles.tabs}>
+            <View style={styles.inputContainer}>
+              <Ionicons 
+                name="person-outline" 
+                size={20} 
+                color={colors.inactive} 
+                style={styles.inputIcon} 
+              />
+              <TextInput 
+                style={[
+                  styles.input, 
+                  { 
+                    backgroundColor: isDark ? colors.cardLight : '#F3F4F6', 
+                    color: colors.text 
+                  }
+                ]}
+                placeholder="Username"
+                placeholderTextColor={colors.inactive}
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+              />
+            </View>
+            
+            {!isLogin && (
+              <View style={styles.inputContainer}>
+                <Ionicons 
+                  name="mail-outline" 
+                  size={20} 
+                  color={colors.inactive} 
+                  style={styles.inputIcon} 
+                />
+                <TextInput 
+                  style={[
+                    styles.input, 
+                    { 
+                      backgroundColor: isDark ? colors.cardLight : '#F3F4F6', 
+                      color: colors.text 
+                    }
+                  ]}
+                  placeholder="Email"
+                  placeholderTextColor={colors.inactive}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+            )}
+            
+            <View style={styles.inputContainer}>
+              <Ionicons 
+                name="lock-closed-outline" 
+                size={20} 
+                color={colors.inactive} 
+                style={styles.inputIcon} 
+              />
+              <TextInput 
+                style={[
+                  styles.input, 
+                  { 
+                    backgroundColor: isDark ? colors.cardLight : '#F3F4F6', 
+                    color: colors.text 
+                  }
+                ]}
+                placeholder="Password"
+                placeholderTextColor={colors.inactive}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
               <TouchableOpacity 
-                style={[styles.tab, isLogin && styles.activeTab]} 
-                onPress={() => setIsLogin(true)}
+                style={styles.passwordToggle}
+                onPress={() => setShowPassword(!showPassword)}
               >
-                <Text style={[styles.tabText, isLogin && styles.activeTabText]}>Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.tab, !isLogin && styles.activeTab]} 
-                onPress={() => setIsLogin(false)}
-              >
-                <Text style={[styles.tabText, !isLogin && styles.activeTabText]}>Register</Text>
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color={colors.inactive} 
+                />
               </TouchableOpacity>
             </View>
             
             {!isLogin && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Username</Text>
-                <View style={styles.inputContainer}>
-                  <Ionicons name="person-outline" size={20} color="#999" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Choose a username"
-                    value={username}
-                    onChangeText={setUsername}
-                    autoCapitalize="none"
-                  />
-                </View>
+              <View style={styles.inputContainer}>
+                <Ionicons 
+                  name="lock-closed-outline" 
+                  size={20} 
+                  color={colors.inactive} 
+                  style={styles.inputIcon} 
+                />
+                <TextInput 
+                  style={[
+                    styles.input, 
+                    { 
+                      backgroundColor: isDark ? colors.cardLight : '#F3F4F6', 
+                      color: colors.text 
+                    }
+                  ]}
+                  placeholder="Confirm Password"
+                  placeholderTextColor={colors.inactive}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showPassword}
+                />
               </View>
             )}
             
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#999" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                />
-              </View>
-              {isLogin && (
-                <TouchableOpacity style={styles.forgotPassword}>
-                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            {isLogin && (
+              <TouchableOpacity style={styles.forgotPasswordContainer}>
+                <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
+                  Forgot Password?
+                </Text>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity 
-              style={styles.authButton}
+              style={[
+                styles.authButton, 
+                { backgroundColor: colors.primary },
+                loading && { opacity: 0.7 }
+              ]}
               onPress={handleAuth}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.authButtonText}>{isLogin ? 'Login' : 'Create Account'}</Text>
-              )}
+              <Text style={styles.authButtonText}>
+                {loading ? 'Please wait...' : isLogin ? 'Login' : 'Sign Up'}
+              </Text>
             </TouchableOpacity>
             
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
+            <View style={styles.dividerContainer}>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.inactive }]}>OR</Text>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
             </View>
             
-            <View style={styles.socialButtons}>
-              <TouchableOpacity 
-                style={[styles.socialButton, styles.googleButton]} 
-                onPress={() => handleSocialAuth('google')}
-                disabled={loading}
-              >
-                <Ionicons name="logo-google" size={20} color="#fff" />
-                <Text style={styles.socialButtonText}>Google</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.socialButton, styles.appleButton]} 
-                onPress={() => handleSocialAuth('apple')}
-                disabled={loading}
-              >
-                <Ionicons name="logo-apple" size={20} color="#fff" />
-                <Text style={styles.socialButtonText}>Apple</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={[
+                styles.socialButton, 
+                { 
+                  borderColor: colors.border,
+                  backgroundColor: isDark ? colors.cardLight : '#FFFFFF'
+                }
+              ]}
+            >
+              <Image 
+                source={{ uri: 'https://www.freepnglogos.com/uploads/google-logo-png/google-logo-png-google-icon-logo-png-transparent-svg-vector-bie-supply-14.png' }} 
+                style={styles.socialIcon} 
+              />
+              <Text style={[styles.socialButtonText, { color: colors.text }]}>
+                Continue with Google
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[
+                styles.socialButton, 
+                { 
+                  borderColor: colors.border,
+                  backgroundColor: isDark ? colors.cardLight : '#FFFFFF',
+                  marginTop: 12
+                }
+              ]}
+            >
+              <Ionicons name="logo-apple" size={24} color={colors.text} />
+              <Text style={[styles.socialButtonText, { color: colors.text }]}>
+                Continue with Apple
+              </Text>
+            </TouchableOpacity>
           </View>
           
-          <View style={styles.termsContainer}>
-            <Text style={styles.termsText}>
-              By signing in, you agree to our{' '}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
+          <View style={styles.footerContainer}>
+            <Text style={[styles.footerText, { color: colors.inactive }]}>
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <Text 
+                style={[styles.footerLink, { color: colors.primary }]}
+                onPress={() => setIsLogin(!isLogin)}
+              >
+                {isLogin ? "Sign Up" : "Login"}
+              </Text>
             </Text>
           </View>
         </ScrollView>
@@ -224,159 +327,134 @@ const AuthScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
-  keyboardAvoid: {
+  keyboardView: {
     flex: 1,
   },
-  scrollContainer: {
+  scrollContent: {
     flexGrow: 1,
-    padding: 24,
-    justifyContent: 'center',
+    padding: 16,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginTop: 24,
+    marginBottom: 32,
   },
-  logoText: {
-    fontSize: 40,
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
+  },
+  appName: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#3b82f6',
     marginBottom: 8,
   },
   tagline: {
     fontSize: 16,
-    color: '#666',
+    textAlign: 'center',
   },
-  formContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  tabs: {
+  tabContainer: {
     flexDirection: 'row',
     marginBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
-  tab: {
+  tabButton: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-  },
-  activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#3b82f6',
+    borderBottomColor: 'transparent',
+  },
+  activeTabButton: {
+    borderBottomWidth: 2,
   },
   tabText: {
     fontSize: 16,
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#3b82f6',
     fontWeight: '600',
   },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
+  formContainer: {
+    marginBottom: 24,
   },
   inputContainer: {
+    marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
   },
   inputIcon: {
-    marginRight: 10,
+    position: 'absolute',
+    left: 12,
+    zIndex: 1,
   },
   input: {
     flex: 1,
     height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 40,
     fontSize: 16,
-    color: '#333',
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
+  passwordToggle: {
+    position: 'absolute',
+    right: 12,
+  },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 24,
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#3b82f6',
   },
   authButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 14,
-    borderRadius: 8,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginBottom: 24,
   },
   authButtonText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
-  divider: {
+  dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginBottom: 24,
   },
-  dividerLine: {
+  divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#eee',
   },
   dividerText: {
-    paddingHorizontal: 16,
-    color: '#666',
+    marginHorizontal: 12,
     fontSize: 14,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
   socialButton: {
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    flex: 0.48,
+    alignItems: 'center',
   },
-  googleButton: {
-    backgroundColor: '#DB4437',
-  },
-  appleButton: {
-    backgroundColor: '#000',
+  socialIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
   },
   socialButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
   },
-  termsContainer: {
-    marginTop: 24,
+  footerContainer: {
+    marginTop: 'auto',
     alignItems: 'center',
+    paddingVertical: 16,
   },
-  termsText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
+  footerText: {
+    fontSize: 14,
   },
-  termsLink: {
-    color: '#3b82f6',
+  footerLink: {
+    fontWeight: '600',
   },
 });
 
