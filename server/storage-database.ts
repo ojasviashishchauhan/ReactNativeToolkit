@@ -100,6 +100,8 @@ export class DatabaseStorage implements IStorage {
       email: user.email,
       avatarUrl: user.avatarUrl ?? undefined,
       bio: user.bio ?? undefined,
+      age: user.age ?? undefined,
+      sex: user.sex ?? undefined,
       rating,
       reviewCount: userReviews.length,
       activitiesHosted: hostedCount,

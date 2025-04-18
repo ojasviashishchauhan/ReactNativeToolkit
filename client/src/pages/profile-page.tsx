@@ -221,9 +221,26 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-600 mt-3 max-w-lg mx-auto">
-                  {bio || "No bio provided yet"}
-                </p>
+                <div className="mt-3 max-w-lg mx-auto">
+                  {(profile?.age || profile?.sex) && (
+                    <div className="flex justify-center space-x-4 text-sm text-gray-600 mb-2">
+                      {profile?.age && (
+                        <div className="flex items-center">
+                          <span className="font-medium mr-1">Age:</span> {profile.age}
+                        </div>
+                      )}
+                      {profile?.sex && (
+                        <div className="flex items-center">
+                          <span className="font-medium mr-1">Sex:</span> 
+                          {profile.sex.charAt(0).toUpperCase() + profile.sex.slice(1)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-gray-600">
+                    {bio || "No bio provided yet"}
+                  </p>
+                </div>
               )}
             </div>
 
