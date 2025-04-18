@@ -99,9 +99,10 @@ export function GoogleMapView({
   const defaultLocation = { lat: 40.7128, lng: -74.0060 }; // NYC
   const mapCenter = userLocation || defaultLocation;
 
-  // Load Google Maps API with environment variable
+  // Access the Google Maps API key from environment secrets
+  const googleMapsApiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.GOOGLE_MAPS_API_KEY || '',
+    googleMapsApiKey: googleMapsApiKey || '',
     id: 'google-map-script'
   });
 
@@ -183,13 +184,30 @@ export function GoogleMapView({
     setSelectedActivity(null);
   };
 
+  // Show error if there's no API key
+  if (!googleMapsApiKey) {
+    return (
+      <div className="flex items-center justify-center h-full w-full bg-gray-100">
+        <div className="text-center p-4">
+          <h3 className="text-lg font-bold text-red-600">Google Maps API Key Missing</h3>
+          <p className="text-gray-600 mt-2 mb-4">
+            Please provide a valid Google Maps API key in your environment variables.
+          </p>
+          <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300 mt-2 text-left">
+            <p className="font-mono">GOOGLE_MAPS_API_KEY=your_api_key_here</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show error if map fails to load
   if (loadError) {
     return (
       <div className="flex items-center justify-center h-full w-full bg-gray-100">
         <div className="text-center">
           <h3 className="text-lg font-bold text-red-600">Error loading map</h3>
-          <p className="text-gray-600">Please try again later</p>
+          <p className="text-gray-600">Please check your Google Maps API key or try again later</p>
         </div>
       </div>
     );

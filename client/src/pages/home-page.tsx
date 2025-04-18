@@ -21,7 +21,7 @@ export default function HomePage() {
   const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
 
   // Get current location
-  useState(() => {
+  useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -40,7 +40,7 @@ export default function HomePage() {
       // Browser doesn't support geolocation
       setUserLocation({ lat: 40.7128, lng: -74.0060 }); // NYC as fallback
     }
-  });
+  }, []);
 
   // Fetch nearby activities
   const { data: activities, isLoading } = useQuery<ActivityWithHost[]>({
@@ -89,7 +89,7 @@ export default function HomePage() {
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                 <i className="fas fa-users text-white text-sm"></i>
               </div>
-              <h1 className="text-lg font-bold text-gray-800 ml-2">ActivityHub</h1>
+              <h1 className="text-lg font-bold text-gray-800 ml-2">Connect</h1>
             </div>
 
             {/* Search Bar */}
