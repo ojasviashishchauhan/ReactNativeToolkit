@@ -1,0 +1,193 @@
+Absolutely! Here’s a **React-focused action plan** for building your cross-platform app (Android, iOS, and web) with all the features you described. This plan is tailored for a React/React Native stack, leveraging open-source tools and best practices.
+
+---
+
+# Action Plan: Activity-Sharing App with React & React Native
+
+## 1. **Tech Stack Selection**
+
+- **Mobile:** [React Native](https://reactnative.dev/) (for Android/iOS)
+- **Web:** [React](https://react.dev/) (with [React Native for Web](https://necolas.github.io/react-native-web/))
+- **Maps:** [react-native-maps](https://github.com/react-native-maps/react-native-maps) (with [OpenStreetMap](https://www.openstreetmap.org/) tiles via [Mapbox](https://docs.mapbox.com/) or [MapLibre](https://maplibre.org/))
+- **Backend:** Node.js + Express (API), or Firebase for rapid prototyping
+- **Database:** MongoDB (with Mongoose), or Firebase Firestore
+- **Authentication:** JWT (custom) or Firebase Auth
+- **Real-time Chat:** [Socket.io](https://socket.io/) (for custom backend) or Firebase Realtime Database
+- **State Management:** Redux Toolkit or React Context API
+- **Notifications:** [Expo Notifications](https://docs.expo.dev/push-notifications/overview/) (for mobile) or web push
+
+---
+
+## 2. **Project Structure & Setup**
+
+### 2.1. **Monorepo Setup**
+- Use [Nx](https://nx.dev/) or [Turborepo](https://turbo.build/) to manage shared code (components, utilities) between web and mobile.
+
+### 2.2. **Initialize Projects**
+- `npx create-react-native-app` for mobile.
+- `npx create-react-app` or Next.js for web.
+- Set up shared UI library for maximum code reuse.
+
+---
+
+## 3. **Core Feature Implementation**
+
+### 3.1. **Authentication & User Profiles**
+- Email/password and social login (Google/Apple).
+- Profile page: avatar, bio, reviews, activities hosted/joined.
+
+### 3.2. **Map & Activity Discovery**
+- Integrate OpenStreetMap with `react-native-maps` (mobile) and [react-leaflet](https://react-leaflet.js.org/) (web).
+- Show user’s location (with permissions).
+- Fetch and display activity markers within a user-settable radius (default: 2km).
+- Activity marker click → show summary card/modal.
+
+### 3.3. **Activity Hosting**
+- Form to create activity: title, description, type, date/time, max participants, general location (picked on map).
+- Save activity to backend.
+- Show hosted activities on user profile.
+
+### 3.4. **Join Requests**
+- "Request to join" button on activity details.
+- Host receives notification and can approve/reject.
+- Upon approval: reveal exact location and create/join chat room.
+
+### 3.5. **Chat Room**
+- Create chat room for each activity (using Socket.io or Firebase).
+- Only approved participants can access.
+- Real-time messaging, emoji support, and basic moderation.
+
+### 3.6. **Reviews**
+- After activity, prompt users to rate/review each other.
+- Reviews appear on user profiles.
+- Aggregate rating displayed.
+
+---
+
+## 4. **Backend API Design**
+
+### 4.1. **Core Endpoints**
+- `/auth/register`, `/auth/login`, `/auth/me`
+- `/users/:id`, `/users/:id/reviews`
+- `/activities` (GET, POST)
+- `/activities/:id` (GET, PUT, DELETE)
+- `/activities/:id/join` (POST)
+- `/activities/:id/participants` (GET, PUT)
+- `/chat/:activityId` (GET, POST)
+
+### 4.2. **Database Schema (Mongoose Example)**
+
+```js
+// User
+{
+  _id,
+  username,
+  email,
+  avatar,
+  bio,
+  reviews: [{ reviewerId, rating, comment, activityId, createdAt }],
+  createdAt,
+}
+
+// Activity
+{
+  _id,
+  hostId,
+  title,
+  description,
+  type,
+  location: { lat, lng, address, exactLocation },
+  dateTime,
+  capacity,
+  participants: [{ userId, status }], // status: pending/approved/rejected
+  isActive,
+  createdAt,
+}
+
+// Chat
+{
+  activityId,
+  messages: [{ senderId, content, createdAt }]
+}
+```
+
+---
+
+## 5. **Development Phases**
+
+### **Phase 1: Foundation**
+- Set up monorepo, initialize web/mobile apps, configure shared components.
+- Set up backend API and database.
+
+### **Phase 2: Authentication & Profiles**
+- Implement user registration/login.
+- Build profile page and edit functionality.
+
+### **Phase 3: Map & Activity System**
+- Integrate maps, show user location.
+- Fetch and display activities as markers.
+- Activity creation and details.
+
+### **Phase 4: Social Features**
+- Join request flow and notifications.
+- Chat room integration.
+- Review/rating system.
+
+### **Phase 5: Polish & Launch**
+- Responsive UI, accessibility, error handling.
+- Push notifications.
+- Testing (unit, integration, e2e).
+- Deploy backend (e.g., Heroku, AWS, Vercel), web, and mobile (App Store, Play Store).
+
+---
+
+## 6. **Sample Tasks for Cursor AI**
+
+- Scaffold React Native + React web apps with shared codebase.
+- Implement OpenStreetMap in both mobile and web using appropriate libraries.
+- Build authentication flow with JWT or Firebase.
+- Create Activity model and API endpoints.
+- Implement join request logic and notification system.
+- Set up Socket.io server and integrate chat rooms.
+- Design and implement review system with profile integration.
+- Ensure mobile/web UI consistency and responsiveness.
+
+---
+
+## 7. **Tips & Best Practices**
+
+- Use [Expo](https://expo.dev/) for easier React Native development and push notifications.
+- Leverage TypeScript for type safety across web and mobile.
+- Modularize code for easy maintenance and scaling.
+- Prioritize security: never expose exact locations until approved, validate all API inputs, and use HTTPS.
+- Regularly test on both mobile platforms and web for consistent UX.
+
+---
+
+## 8. **References & Useful Libraries**
+
+- [react-native-maps](https://github.com/react-native-maps/react-native-maps)
+- [react-leaflet](https://react-leaflet.js.org/)
+- [Socket.io](https://socket.io/)
+- [Redux Toolkit](https://redux-toolkit.js.org/)
+- [React Native for Web](https://necolas.github.io/react-native-web/)
+- [Expo Notifications](https://docs.expo.dev/push-notifications/overview/)
+
+---
+
+## Summary Table
+
+| Feature         | Mobile (React Native) | Web (React)        | Backend (Node/Express) |
+|-----------------|----------------------|--------------------|------------------------|
+| Map             | react-native-maps     | react-leaflet      | N/A                    |
+| Auth            | Firebase/JWT          | Firebase/JWT       | JWT/Firebase           |
+| Activities      | Shared API            | Shared API         | REST API               |
+| Chat            | Socket.io/Firebase    | Socket.io/Firebase | Socket.io/Firebase     |
+| Reviews         | Shared API            | Shared API         | REST API               |
+
+---
+
+**This plan gives Cursor AI (or your dev team) a step-by-step, React-centric roadmap for building your app efficiently, with code reuse and maintainability in mind.** If you want a more detailed breakdown for any phase or feature, just ask!
+
+---
+Answer from Perplexity: pplx.ai/share
