@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { ActivityWithHost } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, MinusIcon, Locate, Plus } from "lucide-react";
+import { PlusIcon, MinusIcon, Locate, Plus, MapPin, Wind, Utensils, MapIcon, Ruler } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 // Types
 type MapViewProps = {
@@ -23,6 +27,9 @@ export function MapView({
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
+  const [searchRadius, setSearchRadius] = useState<number>(10); // Default 10km radius
+  const [showRadiusCircle, setShowRadiusCircle] = useState<boolean>(false);
+  const [radiusCircle, setRadiusCircle] = useState<any>(null);
 
   // Initialize map
   useEffect(() => {
@@ -94,10 +101,32 @@ export function MapView({
 
     const userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
 
+    // Add search radius circle if enabled
+    if (showRadiusCircle) {
+      // Remove existing circle if any
+      if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+      }
+      
+      // Create new circle
+      const circle = L.circle([userLocation.lat, userLocation.lng], {
+        radius: searchRadius * 1000, // Convert km to meters
+        color: '#4F46E5',
+        fillColor: '#4F46E5',
+        fillOpacity: 0.1,
+        weight: 2
+      }).addTo(map);
+      
+      setRadiusCircle(circle);
+    }
+
     return () => {
       map.removeLayer(userMarker);
+      if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+      }
     };
-  }, [map, userLocation]);
+  }, [map, userLocation, searchRadius, showRadiusCircle]);
 
   // Update activity markers when activities change
   useEffect(() => {
@@ -186,6 +215,16 @@ export function MapView({
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
   };
+  
+  // Toggle search radius visibility
+  const toggleSearchRadius = () => {
+    setShowRadiusCircle(!showRadiusCircle);
+  };
+  
+  // Update search radius
+  const handleRadiusChange = (value: number[]) => {
+    setSearchRadius(value[0]);
+  };
 
   return (
     <div className="relative w-full h-full">
@@ -231,7 +270,40 @@ export function MapView({
         >
           <Locate className="h-5 w-5" />
         </Button>
+        <Button
+          variant="default"
+          size="icon"
+          className={`h-10 w-10 rounded-lg ${showRadiusCircle ? 'bg-primary text-white' : 'bg-white text-gray-700'} hover:bg-gray-100 shadow-md`}
+          onClick={toggleSearchRadius}
+          title="Set search radius"
+        >
+          <Ruler className="h-5 w-5" />
+        </Button>
       </div>
+      
+      {/* Search Radius Control */}
+      {showRadiusCircle && (
+        <Card className="absolute left-4 bottom-16 p-4 shadow-lg w-64">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Search Radius</span>
+              <Badge variant="outline">{searchRadius} km</Badge>
+            </div>
+            <Slider 
+              defaultValue={[searchRadius]} 
+              max={50} 
+              min={1} 
+              step={1} 
+              onValueChange={handleRadiusChange}
+            />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>1km</span>
+              <span>25km</span>
+              <span>50km</span>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Activity Filters */}
       <div className="absolute left-4 top-4 right-16 overflow-x-auto hide-scrollbar">

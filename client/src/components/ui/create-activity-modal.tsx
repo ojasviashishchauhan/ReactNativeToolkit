@@ -399,11 +399,11 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
             />
             
             <div className="relative">
-              <FormLabel>Location</FormLabel>
-              <div className="h-40 overflow-hidden rounded-lg mb-2">
+              <FormLabel>Location (Click on map to choose spot)</FormLabel>
+              <div className="h-48 overflow-hidden rounded-lg mb-2">
                 <div 
                   id="location-picker-map"
-                  className="h-40 bg-blue-100 rounded-lg relative"
+                  className="h-48 bg-blue-100 rounded-lg relative"
                   style={{ width: '100%' }}
                 >
                   {!mapInstance && (
@@ -413,12 +413,25 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
                           <MapPin className="h-6 w-6" />
                         </div>
                         <span>Map Location Picker</span><br/>
-                        <span className="text-xs">(Click to select location)</span>
+                        <span className="text-xs">(Loading map...)</span>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
+              
+              {mapLocation && (
+                <div className="p-2 bg-primary/10 rounded-md mb-2 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Selected location</span>
+                  </div>
+                  <div className="mt-1 text-xs text-gray-600 pl-6">
+                    Latitude: {mapLocation.lat.toFixed(6)} | Longitude: {mapLocation.lng.toFixed(6)}
+                  </div>
+                </div>
+              )}
+              
               <div className="text-sm text-gray-500 flex items-center">
                 <div className="flex items-center">
                   <div className="mr-1">
