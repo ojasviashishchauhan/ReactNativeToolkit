@@ -6,6 +6,9 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // Types
 type MapViewProps = {
@@ -17,199 +20,129 @@ type MapViewProps = {
 
 type FilterType = "all" | "hiking" | "cycling" | "sports" | "food" | "arts" | "other";
 
+// Component to handle map controls and events
+function MapController({ 
+  userLocation, 
+  searchRadius, 
+  onMapClick 
+}: { 
+  userLocation: { lat: number; lng: number } | null, 
+  searchRadius: number,
+  onMapClick: (latlng: L.LatLng) => void
+}) {
+  const map = useMap();
+  
+  // Set up map click event
+  useMapEvents({
+    click: (e: L.LeafletMouseEvent) => {
+      onMapClick(e.latlng);
+    }
+  });
+  
+  // Center map on user location when it changes
+  useEffect(() => {
+    if (userLocation) {
+      map.setView([userLocation.lat, userLocation.lng], map.getZoom());
+    }
+  }, [userLocation, map]);
+  
+  return null;
+}
+
 export function MapView({ 
   userLocation, 
   activities, 
   onActivityClick,
   onCreateActivity
 }: MapViewProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
-  const [map, setMap] = useState<any>(null);
-  const [markers, setMarkers] = useState<any[]>([]);
   const [searchRadius, setSearchRadius] = useState<number>(10); // Default 10km radius
-  const [showRadiusCircle, setShowRadiusCircle] = useState<boolean>(false);
-  const [radiusCircle, setRadiusCircle] = useState<any>(null);
+  const [showRadiusCircle, setShowRadiusCircle] = useState<boolean>(true);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Initialize map
-  useEffect(() => {
-    if (!mapRef.current || map) return;
-
-    // Load leaflet script dynamically
-    const leafletScript = document.createElement('script');
-    leafletScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    leafletScript.async = true;
-    document.body.appendChild(leafletScript);
-
-    // Load leaflet CSS
-    const leafletCSS = document.createElement('link');
-    leafletCSS.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    leafletCSS.rel = 'stylesheet';
-    document.head.appendChild(leafletCSS);
-
-    leafletScript.onload = () => {
-      // Default view if user location not available
-      const defaultLocation = { lat: 40.7128, lng: -74.0060 }; // NYC
-      const initialLocation = userLocation || defaultLocation;
-      
-      // Create map instance
-      const L = window.L;
-      const mapInstance = L.map(mapRef.current).setView(
-        [initialLocation.lat, initialLocation.lng], 
-        14
-      );
-
-      // Add OpenStreetMap tiles
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(mapInstance);
-
-      // Save map instance
-      setMap(mapInstance);
-    };
-
-    return () => {
-      // Cleanup
-      document.body.removeChild(leafletScript);
-      document.head.removeChild(leafletCSS);
-    };
-  }, [mapRef, map, userLocation]);
-
-  // Update map when user location changes
-  useEffect(() => {
-    if (!map || !userLocation) return;
-
-    // Center map on user location
-    map.setView([userLocation.lat, userLocation.lng], map.getZoom());
-
-    // Add user location marker
-    const L = window.L;
-    const userIcon = L.divIcon({
-      className: 'user-location-marker',
-      html: `
-        <div class="relative">
-          <div class="w-12 h-12 bg-blue-500 bg-opacity-20 rounded-full absolute -top-6 -left-6"></div>
-          <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
-            <div class="w-2 h-2 bg-white rounded-full"></div>
-          </div>
+  // Default view if user location not available
+  const defaultLocation = { lat: 40.7128, lng: -74.0060 }; // NYC
+  const mapCenter = userLocation || defaultLocation;
+  
+  // Create custom icon for user location
+  const userIcon = L.divIcon({
+    className: 'user-location-marker',
+    html: `
+      <div class="relative">
+        <div class="w-12 h-12 bg-blue-500 bg-opacity-20 rounded-full absolute -top-6 -left-6"></div>
+        <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+          <div class="w-2 h-2 bg-white rounded-full"></div>
         </div>
-      `,
-      iconSize: [6, 6],
-      iconAnchor: [3, 3]
+      </div>
+    `,
+    iconSize: [6, 6],
+    iconAnchor: [3, 3]
+  });
+
+  // Filter activities based on selected filter
+  const filteredActivities = activeFilter === "all" 
+    ? activities 
+    : activities.filter(activity => activity.type === activeFilter);
+    
+  // Handle map click for location selection
+  const handleMapClick = (latlng: L.LatLng) => {
+    setSelectedLocation({
+      lat: latlng.lat,
+      lng: latlng.lng
     });
-
-    const userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
-
-    // Always show search radius circle
-    // Remove existing circle if any
-    if (radiusCircle) {
-      map.removeLayer(radiusCircle);
-    }
     
-    // Create new circle
-    const circle = L.circle([userLocation.lat, userLocation.lng], {
-      radius: searchRadius * 1000, // Convert km to meters
-      color: '#4F46E5',
-      fillColor: '#4F46E5',
-      fillOpacity: 0.1,
-      weight: 2
-    }).addTo(map);
-    
-    setRadiusCircle(circle);
-    
-    // Set showRadiusCircle to true to always display the control
-    setShowRadiusCircle(true);
-
-    return () => {
-      map.removeLayer(userMarker);
-      if (radiusCircle) {
-        map.removeLayer(radiusCircle);
-      }
-    };
-  }, [map, userLocation, searchRadius]);
-
-  // Update activity markers when activities change
-  useEffect(() => {
-    if (!map || !activities) return;
-
-    // Remove existing markers
-    markers.forEach(marker => map.removeLayer(marker));
-
-    // Filter activities
-    const filteredActivities = activeFilter === "all" 
-      ? activities 
-      : activities.filter(activity => activity.type === activeFilter);
-
-    // Create markers for activities
-    const L = window.L;
-    const newMarkers = filteredActivities.map(activity => {
-      // Determine icon color and type based on activity type
-      let iconColor = 'bg-primary';
-      let iconClass = 'fas fa-map-marker-alt';
-      
-      switch(activity.type) {
-        case 'hiking':
-          iconClass = 'fas fa-hiking';
-          break;
-        case 'cycling':
-          iconClass = 'fas fa-bicycle';
-          iconColor = 'bg-green-500';
-          break;
-        case 'sports':
-          iconClass = 'fas fa-volleyball-ball';
-          iconColor = 'bg-purple-500';
-          break;
-        case 'food':
-          iconClass = 'fas fa-utensils';
-          iconColor = 'bg-orange-500';
-          break;
-        case 'arts':
-          iconClass = 'fas fa-paint-brush';
-          iconColor = 'bg-pink-500';
-          break;
-        default:
-          iconClass = 'fas fa-map-marker-alt';
-      }
-
-      // Create custom icon
-      const activityIcon = L.divIcon({
-        className: 'activity-marker',
-        html: `<div class="w-10 h-10 ${iconColor} rounded-full flex items-center justify-center shadow-lg cursor-pointer">
-                <i class="${iconClass} text-white"></i>
-               </div>`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20]
-      });
-
-      // Create marker
-      const marker = L.marker([activity.latitude, activity.longitude], { icon: activityIcon })
-        .addTo(map)
-        .on('click', () => onActivityClick(activity));
-
-      return marker;
+    toast({
+      title: "Location selected",
+      description: `Latitude: ${latlng.lat.toFixed(6)}, Longitude: ${latlng.lng.toFixed(6)}`,
+      duration: 3000,
     });
+  };
 
-    setMarkers(newMarkers);
+  // Map control component reference for zoom and pan functions
+  const mapControllerRef = useRef<{
+    zoomIn: () => void;
+    zoomOut: () => void;
+    locateUser: () => void;
+  }>({
+    zoomIn: () => {},
+    zoomOut: () => {},
+    locateUser: () => {}
+  });
 
-    return () => {
-      newMarkers.forEach(marker => map.removeLayer(marker));
-    };
-  }, [map, activities, activeFilter, onActivityClick]);
-
+  // MapControl - child component to access map instance
+  const MapControl = () => {
+    const map = useMap();
+    
+    // Set control functions
+    useEffect(() => {
+      if (map) {
+        mapControllerRef.current = {
+          zoomIn: () => map.setZoom(map.getZoom() + 1),
+          zoomOut: () => map.setZoom(map.getZoom() - 1),
+          locateUser: () => {
+            if (userLocation) {
+              map.setView([userLocation.lat, userLocation.lng], 15);
+            }
+          }
+        };
+      }
+    }, [map, userLocation]);
+    
+    return null;
+  };
+  
   // Map zoom controls
   const handleZoomIn = () => {
-    if (map) map.setZoom(map.getZoom() + 1);
+    mapControllerRef.current.zoomIn();
   };
 
   const handleZoomOut = () => {
-    if (map) map.setZoom(map.getZoom() - 1);
+    mapControllerRef.current.zoomOut();
   };
 
   const handleLocateUser = () => {
-    if (map && userLocation) {
-      map.setView([userLocation.lat, userLocation.lng], 15);
-    }
+    mapControllerRef.current.locateUser();
   };
 
   // Filter handlers
@@ -227,26 +160,131 @@ export function MapView({
     setSearchRadius(value[0]);
   };
 
+  // Create custom activity icon based on activity type
+  const getActivityIcon = (activityType: string) => {
+    // Determine icon color and type based on activity type
+    let iconColor = 'bg-primary';
+    let iconClass = 'fas fa-map-marker-alt';
+    
+    switch(activityType) {
+      case 'hiking':
+        iconClass = 'fas fa-hiking';
+        break;
+      case 'cycling':
+        iconClass = 'fas fa-bicycle';
+        iconColor = 'bg-green-500';
+        break;
+      case 'sports':
+        iconClass = 'fas fa-volleyball-ball';
+        iconColor = 'bg-purple-500';
+        break;
+      case 'food':
+        iconClass = 'fas fa-utensils';
+        iconColor = 'bg-orange-500';
+        break;
+      case 'arts':
+        iconClass = 'fas fa-paint-brush';
+        iconColor = 'bg-pink-500';
+        break;
+      default:
+        iconClass = 'fas fa-map-marker-alt';
+    }
+
+    return L.divIcon({
+      className: 'activity-marker',
+      html: `<div class="w-10 h-10 ${iconColor} rounded-full flex items-center justify-center shadow-lg cursor-pointer">
+              <i class="${iconClass} text-white"></i>
+             </div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+  };
+
   return (
     <div className="relative w-full h-full">
       {/* Map Container */}
-      <div 
-        ref={mapRef} 
-        className="w-full h-full bg-blue-100"
+      <MapContainer 
+        center={[mapCenter.lat, mapCenter.lng]} 
+        zoom={14} 
+        style={{ width: "100%", height: "100%" }}
+        attributionControl={false}
       >
-        {/* Placeholder content that will be replaced by the map */}
-        {!map && (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-            <p className="text-center">
-              <i className="fas fa-map-marked-alt text-4xl mb-2"></i><br/>
-              Loading Map...<br/>
-            </p>
-          </div>
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="© OpenStreetMap contributors"
+        />
+        
+        {/* Map Controller for events and controls */}
+        <MapController 
+          userLocation={userLocation} 
+          searchRadius={searchRadius}
+          onMapClick={handleMapClick}
+        />
+        
+        {/* Map Controls for zoom/locate */}
+        <MapControl />
+        
+        {/* User location marker */}
+        {userLocation && (
+          <Marker 
+            position={[userLocation.lat, userLocation.lng]}
+            icon={userIcon}
+          />
         )}
-      </div>
+        
+        {/* Search radius circle */}
+        {userLocation && showRadiusCircle && (
+          <Circle 
+            center={[userLocation.lat, userLocation.lng]}
+            radius={searchRadius * 1000}
+            pathOptions={{
+              color: '#4F46E5',
+              fillColor: '#4F46E5',
+              fillOpacity: 0.1,
+              weight: 2
+            }}
+          />
+        )}
+        
+        {/* Activity markers */}
+        {filteredActivities.map(activity => (
+          <Marker
+            key={activity.id}
+            position={[activity.latitude, activity.longitude]}
+            icon={getActivityIcon(activity.type)}
+            eventHandlers={{
+              click: () => onActivityClick(activity)
+            }}
+          >
+            <Popup>
+              <div className="p-1">
+                <h3 className="font-bold">{activity.title}</h3>
+                <p className="text-sm text-gray-600">
+                  Hosted by {activity.host.username}
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+        
+        {/* Selected location marker */}
+        {selectedLocation && (
+          <Marker
+            position={[selectedLocation.lat, selectedLocation.lng]}
+            icon={L.divIcon({
+              className: 'selected-location-marker',
+              html: `<div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                      <i class="fas fa-map-pin text-white text-sm"></i>
+                    </div>`,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16]
+            })}
+          />
+        )}
+      </MapContainer>
 
       {/* Map Controls */}
-      <div className="absolute right-4 top-4 flex flex-col space-y-2">
+      <div className="absolute right-4 top-4 flex flex-col space-y-2 z-[1000]">
         <Button
           variant="default"
           size="icon"
