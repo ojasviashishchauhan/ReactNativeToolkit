@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { ActivityWithHost } from "@shared/schema";
 import { Sidebar } from "@/components/ui/sidebar";
 import { BottomNavigation } from "@/components/ui/bottom-navigation";
-import { MapView } from "@/components/ui/map-view";
+import { GoogleMapView } from "@/components/ui/google-map-view";
 import { ActivityDetails } from "@/components/ui/activity-details";
 import { CreateActivityModal } from "@/components/ui/create-activity-modal";
 import { ChatModal } from "@/components/ui/chat-modal";
@@ -36,6 +36,9 @@ export default function HomePage() {
           setUserLocation({ lat: 40.7128, lng: -74.0060 }); // NYC as fallback
         }
       );
+    } else {
+      // Browser doesn't support geolocation
+      setUserLocation({ lat: 40.7128, lng: -74.0060 }); // NYC as fallback
     }
   });
 
@@ -126,7 +129,7 @@ export default function HomePage() {
 
         {/* Map View */}
         <div className="flex-1 overflow-hidden">
-          <MapView 
+          <GoogleMapView 
             userLocation={userLocation}
             activities={activities || []}
             onActivityClick={handleActivityClick}
