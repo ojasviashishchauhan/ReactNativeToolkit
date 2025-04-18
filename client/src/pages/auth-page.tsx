@@ -6,6 +6,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { insertUserSchema } from "@shared/schema";
 import { FaUsers, FaGoogle, FaApple } from "react-icons/fa";
+import { Loader2 } from "lucide-react";
+import { signInWithGoogle, signInWithApple } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +58,9 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const [location, navigate] = useLocation();
   const { user, loginMutation, registerMutation, isLoading } = useAuth();
+  const { toast } = useToast();
+  const [isGoogleAuthPending, setIsGoogleAuthPending] = useState(false);
+  const [isAppleAuthPending, setIsAppleAuthPending] = useState(false);
 
   // If user is already logged in, redirect to home
   useEffect(() => {
@@ -96,6 +102,72 @@ export default function AuthPage() {
   const onRegisterSubmit = (data: RegisterFormValues) => {
     const { confirmPassword, termsAccepted, ...userData } = data;
     registerMutation.mutate(userData);
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleAuthPending(true);
+      const result = await signInWithGoogle();
+      const { user } = result;
+      
+      // Register the user with our system using Firebase credentials
+      if (user.email && user.displayName) {
+        registerMutation.mutate({
+          username: user.displayName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000),
+          email: user.email,
+          password: Math.random().toString(36).slice(-12), // Generate a random password
+          bio: `Joined via Google - ${user.displayName}`,
+        });
+        
+        toast({
+          title: "Google sign-in successful",
+          description: "You are now being logged in",
+        });
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      toast({
+        title: "Google sign-in failed",
+        description: "There was an error signing in with Google. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGoogleAuthPending(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      setIsAppleAuthPending(true);
+      const result = await signInWithApple();
+      const { user } = result;
+      
+      // Register the user with our system using Apple credentials
+      if (user.email) {
+        registerMutation.mutate({
+          username: user.displayName ? 
+            user.displayName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000) : 
+            `user${Math.floor(Math.random() * 10000)}`,
+          email: user.email,
+          password: Math.random().toString(36).slice(-12), // Generate a random password
+          bio: `Joined via Apple${user.displayName ? ` - ${user.displayName}` : ''}`,
+        });
+        
+        toast({
+          title: "Apple sign-in successful",
+          description: "You are now being logged in",
+        });
+      }
+    } catch (error) {
+      console.error("Apple sign-in error:", error);
+      toast({
+        title: "Apple sign-in failed",
+        description: "There was an error signing in with Apple. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAppleAuthPending(false);
+    }
   };
 
   return (
@@ -301,13 +373,43 @@ export default function AuthPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <Button variant="outline" type="button" className="space-x-2">
-                <FaGoogle className="text-red-500" />
-                <span>Google</span>
+              <Button 
+                variant="outline" 
+                type="button" 
+                className="space-x-2"
+                onClick={handleGoogleSignIn}
+                disabled={isGoogleAuthPending || registerMutation.isPending || loginMutation.isPending}
+              >
+                {isGoogleAuthPending ? (
+                  <span className="flex items-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                    <span>Signing in...</span>
+                  </span>
+                ) : (
+                  <>
+                    <FaGoogle className="text-red-500" />
+                    <span>Google</span>
+                  </>
+                )}
               </Button>
-              <Button variant="outline" type="button" className="space-x-2">
-                <FaApple />
-                <span>Apple</span>
+              <Button 
+                variant="outline" 
+                type="button" 
+                className="space-x-2"
+                onClick={handleAppleSignIn}
+                disabled={isAppleAuthPending || registerMutation.isPending || loginMutation.isPending}
+              >
+                {isAppleAuthPending ? (
+                  <span className="flex items-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                    <span>Signing in...</span>
+                  </span>
+                ) : (
+                  <>
+                    <FaApple />
+                    <span>Apple</span>
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
