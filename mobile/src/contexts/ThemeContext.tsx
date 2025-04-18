@@ -1,122 +1,82 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Appearance, ColorSchemeName, useColorScheme as nativeUseColorScheme } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import { THEME_COLORS } from '../constants';
+import { ThemeColors, ThemeType } from '../types';
 
-// Theme type definitions
-type ThemeMode = 'light' | 'dark' | 'system';
-type ThemeContextType = {
-  themeMode: ThemeMode;
+interface ThemeContextType {
+  theme: ThemeType;
   isDark: boolean;
-  colors: ColorTheme;
-  setThemeMode: (mode: ThemeMode) => void;
-};
-
-// Colors interface
-interface ColorTheme {
-  primary: string;
-  accent: string;
-  background: string;
-  card: string;
-  cardLight: string;
-  text: string;
-  border: string;
-  inactive: string;
-  error: string;
-  success: string;
+  colors: ThemeColors;
+  setTheme: (theme: ThemeType) => void;
 }
 
-// Light theme colors
-const lightColors: ColorTheme = {
-  primary: '#2E7CF6',
-  accent: '#4AC1A2',
-  background: '#F9F9F9',
-  card: '#FFFFFF',
-  cardLight: '#F3F4F6',
-  text: '#1A1C1E',
-  border: '#E2E2E2',
-  inactive: '#A1A1AA',
-  error: '#EF4444',
-  success: '#22C55E',
-};
-
-// Dark theme colors
-const darkColors: ColorTheme = {
-  primary: '#4E98FF',
-  accent: '#4AC1A2',
-  background: '#121212',
-  card: '#1E1E1E',
-  cardLight: '#2A2A2A',
-  text: '#F9F9F9',
-  border: '#333333',
-  inactive: '#71717A',
-  error: '#F87171',
-  success: '#4ADE80',
-};
-
-// Create context
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Theme provider
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
-  const [isDark, setIsDark] = useState<boolean>(systemColorScheme === 'dark');
+export const ThemeProvider: React.FC<{children: ReactNode}> = ({ children }) => {
+  const deviceTheme = nativeUseColorScheme();
+  const [theme, setThemeState] = useState<ThemeType>('system');
+  const [isDark, setIsDark] = useState<boolean>(deviceTheme === 'dark');
 
-  // Load saved theme mode on mount
+  // Load saved theme preference
   useEffect(() => {
-    loadThemeMode();
+    const loadThemePreference = async () => {
+      try {
+        const savedTheme = await SecureStore.getItemAsync('theme_preference');
+        if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system')) {
+          setThemeState(savedTheme as ThemeType);
+        }
+      } catch (error) {
+        console.error('Error loading theme preference:', error);
+      }
+    };
+
+    loadThemePreference();
   }, []);
 
-  // Update isDark when system color scheme or theme mode changes
+  // Update isDark when theme changes
   useEffect(() => {
-    if (themeMode === 'system') {
-      setIsDark(systemColorScheme === 'dark');
-    } else {
-      setIsDark(themeMode === 'dark');
-    }
-  }, [systemColorScheme, themeMode]);
-
-  // Load theme mode from AsyncStorage
-  const loadThemeMode = async () => {
-    try {
-      const savedThemeMode = await AsyncStorage.getItem('@theme_mode');
-      if (savedThemeMode) {
-        setThemeMode(savedThemeMode as ThemeMode);
+    const updateIsDark = () => {
+      if (theme === 'system') {
+        setIsDark(deviceTheme === 'dark');
+      } else {
+        setIsDark(theme === 'dark');
       }
-    } catch (error) {
-      console.error('Failed to load theme mode', error);
-    }
-  };
+    };
 
-  // Save theme mode to AsyncStorage
-  const handleSetThemeMode = async (mode: ThemeMode) => {
+    updateIsDark();
+
+    // Listen for system theme changes
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      if (theme === 'system') {
+        setIsDark(colorScheme === 'dark');
+      }
+    });
+
+    return () => subscription.remove();
+  }, [theme, deviceTheme]);
+
+  // Save theme preference when it changes
+  const setTheme = async (newTheme: ThemeType) => {
+    setThemeState(newTheme);
     try {
-      await AsyncStorage.setItem('@theme_mode', mode);
-      setThemeMode(mode);
+      await SecureStore.setItemAsync('theme_preference', newTheme);
     } catch (error) {
-      console.error('Failed to save theme mode', error);
+      console.error('Error saving theme preference:', error);
     }
   };
 
-  // Get current colors based on isDark
-  const colors = isDark ? darkColors : lightColors;
+  // Determine current colors based on isDark
+  const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
 
   return (
-    <ThemeContext.Provider
-      value={{
-        themeMode,
-        isDark,
-        colors,
-        setThemeMode: handleSetThemeMode,
-      }}
-    >
+    <ThemeContext.Provider value={{ theme, isDark, colors, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// Hook for using the theme context
-export const useTheme = () => {
+export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');
