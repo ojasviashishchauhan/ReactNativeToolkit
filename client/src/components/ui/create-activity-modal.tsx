@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -7,13 +7,14 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { X, MapPin, Lock } from "lucide-react";
+import { X, MapPin, Lock, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 // Leaflet type declaration for window
 declare global {
@@ -40,6 +41,11 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
   
   // Map reference
   const [mapInstance, setMapInstance] = useState<any>(null);
+  
+  // Address suggestions state
+  const [addressSuggestions, setAddressSuggestions] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
+  const [isAddressLoading, setIsAddressLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   // Create form with extended schema to handle string dates
   const today = new Date();
@@ -243,6 +249,79 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
     },
   });
 
+  // Search for address suggestions
+  const searchAddressSuggestions = useCallback(async (query: string) => {
+    if (!query || query.length < 3) {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    
+    setIsAddressLoading(true);
+    setShowSuggestions(true);
+    
+    try {
+      // Using Nominatim OpenStreetMap API for geocoding
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`, 
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
+        setAddressSuggestions(data);
+      }
+    } catch (error) {
+      console.error("Error fetching address suggestions:", error);
+      setAddressSuggestions([]);
+    } finally {
+      setIsAddressLoading(false);
+    }
+  }, []);
+  
+  // Debounce function to prevent too many API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const address = form.getValues().address;
+      if (address && address.length >= 3) {
+        searchAddressSuggestions(address);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [form.watch('address'), searchAddressSuggestions]);
+  
+  // Handle selection of an address suggestion
+  const handleSelectAddress = useCallback((suggestion: typeof addressSuggestions[0]) => {
+    // Update form with selected address
+    form.setValue('address', suggestion.display_name);
+    
+    // Update map location and marker
+    const newLocation = {
+      lat: parseFloat(suggestion.lat),
+      lng: parseFloat(suggestion.lon)
+    };
+    
+    setMapLocation(newLocation);
+    form.setValue('latitude', newLocation.lat);
+    form.setValue('longitude', newLocation.lng);
+    form.setValue('exactLatitude', newLocation.lat);
+    form.setValue('exactLongitude', newLocation.lng);
+    
+    // Update map view if map exists
+    if (mapInstance) {
+      mapInstance.setView([newLocation.lat, newLocation.lng], 15);
+      
+      // Update marker position if it exists
+      if (mapInstance._markers && mapInstance._markers.length > 0) {
+        mapInstance._markers[0].setLatLng([newLocation.lat, newLocation.lng]);
+      }
+    }
+    
+    // Hide suggestions
+    setShowSuggestions(false);
+  }, [form, mapInstance]);
+
   const onSubmit = (values: FormValues) => {
     createActivityMutation.mutate(values);
   };
@@ -381,18 +460,62 @@ export function CreateActivityModal({ isOpen, onClose, userLocation }: CreateAct
               control={form.control}
               name="address"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="relative">
                   <FormLabel>Address (Optional)</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Street address or landmark (this will be visible to all)" 
-                      value={field.value || ''}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
+                    <div className="relative">
+                      <Input 
+                        placeholder="Street address or landmark (this will be visible to all)" 
+                        value={field.value || ''}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          if (e.target.value.length >= 3) {
+                            setShowSuggestions(true);
+                          } else {
+                            setShowSuggestions(false);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Delay hiding suggestions to allow click to register
+                          setTimeout(() => {
+                            field.onBlur();
+                            setShowSuggestions(false);
+                          }, 200);
+                        }}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                      {isAddressLoading && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
+                  
+                  {showSuggestions && addressSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                      <Command>
+                        <CommandList>
+                          <CommandGroup>
+                            {addressSuggestions.map((suggestion, idx) => (
+                              <CommandItem
+                                key={idx}
+                                onSelect={() => handleSelectAddress(suggestion)}
+                                className="cursor-pointer hover:bg-gray-100 py-2 px-3 text-sm"
+                              >
+                                <div className="flex items-start">
+                                  <MapPin className="h-4 w-4 mr-2 mt-0.5 shrink-0 text-primary" />
+                                  <span className="line-clamp-2">{suggestion.display_name}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </div>
+                  )}
+                  
                   <FormMessage />
                 </FormItem>
               )}
