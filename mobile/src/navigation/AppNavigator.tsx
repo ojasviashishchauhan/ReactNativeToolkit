@@ -1,42 +1,27 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../contexts/ThemeContext';
+import { RootStackParamList } from '../types';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
-import ActivityScreen from '../screens/ActivityScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AuthScreen from '../screens/AuthScreen';
 import ActivityDetailScreen from '../screens/ActivityDetailScreen';
-import ChatScreen from '../screens/ChatScreen';
 import CreateActivityScreen from '../screens/CreateActivityScreen';
+import ChatScreen from '../screens/ChatScreen';
+import UserReviewsScreen from '../screens/UserReviewsScreen';
 
-// Define types for our stack navigator
-export type RootStackParamList = {
-  Main: undefined;
-  Auth: undefined;
-  ActivityDetail: { activityId: number };
-  Chat: { activityId: number };
-  CreateActivity: undefined;
-};
-
-// Define types for our tab navigator
-type MainTabParamList = {
-  Home: undefined;
-  Map: undefined;
-  MyActivities: undefined;
-  Profile: undefined;
-};
-
+// Create navigators
 const Stack = createStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator<MainTabParamList>();
+const Tab = createBottomTabNavigator();
 
-// Main tab navigator
-const MainTabNavigator = () => {
+// Bottom Tab Navigator
+const TabNavigator = () => {
   const { colors, isDark } = useTheme();
   
   return (
@@ -44,19 +29,17 @@ const MainTabNavigator = () => {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: string;
-
+          
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Map') {
             iconName = focused ? 'map' : 'map-outline';
-          } else if (route.name === 'MyActivities') {
-            iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           } else {
             iconName = 'help-circle-outline';
           }
-
+          
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: colors.primary,
@@ -64,115 +47,104 @@ const MainTabNavigator = () => {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
-          paddingBottom: 5,
-          height: 60,
+          // iOS-specific shadow
+          shadowColor: isDark ? '#000' : '#888',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          // Android-specific elevation
+          elevation: 8,
+          // More padding for iOS to match standard
+          paddingBottom: Platform.OS === 'ios' ? 6 : 4,
+          paddingTop: Platform.OS === 'ios' ? 10 : 4,
+          height: Platform.OS === 'ios' ? 85 : 65,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
-          marginBottom: 5,
+          marginBottom: Platform.OS === 'ios' ? 0 : 4,
         },
         headerShown: false,
       })}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen} 
-        options={{
-          title: 'Home',
-        }}
-      />
-      <Tab.Screen 
-        name="Map" 
-        component={MapScreen} 
-        options={{
-          title: 'Discover',
-        }}
-      />
-      <Tab.Screen 
-        name="MyActivities" 
-        component={ActivityScreen} 
-        options={{
-          title: 'Activities',
-        }}
-      />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen} 
-        options={{
-          title: 'Profile',
-        }}
-      />
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Map" component={MapScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 };
 
-// Root navigator
-const AppNavigator = () => {
+// Main App Navigator with Authentication Flow
+const AppNavigator: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {
   const { colors } = useTheme();
-
+  
   return (
-    <NavigationContainer
-      theme={{
-        dark: true,
-        colors: {
-          primary: colors.primary,
-          background: colors.background,
-          card: colors.card,
-          text: colors.text,
-          border: colors.border,
-          notification: colors.primary,
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.card,
+          shadowColor: colors.border,
+          elevation: 0,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        cardStyle: {
+          backgroundColor: colors.background,
         },
       }}
     >
-      <Stack.Navigator
-        initialRouteName="Auth"
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: colors.background },
-        }}
-      >
-        <Stack.Screen name="Auth" component={AuthScreen} />
-        <Stack.Screen name="Main" component={MainTabNavigator} />
+      {isAuthenticated ? (
+        // Authenticated Stack
+        <>
+          <Stack.Screen 
+            name="Main" 
+            component={TabNavigator} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="ActivityDetail" 
+            component={ActivityDetailScreen} 
+            options={({ route }) => ({ 
+              title: 'Activity Details',
+              headerBackTitleVisible: false,
+            })} 
+          />
+          <Stack.Screen 
+            name="CreateActivity" 
+            component={CreateActivityScreen} 
+            options={{ 
+              title: 'Create Activity',
+              headerBackTitleVisible: false,
+            }} 
+          />
+          <Stack.Screen 
+            name="Chat" 
+            component={ChatScreen}
+            options={({ route }) => ({ 
+              title: route.params?.activityTitle || 'Chat',
+              headerBackTitleVisible: false,
+            })} 
+          />
+          <Stack.Screen 
+            name="UserReviews" 
+            component={UserReviewsScreen}
+            options={{ 
+              title: 'Reviews',
+              headerBackTitleVisible: false,
+            }} 
+          />
+        </>
+      ) : (
+        // Authentication Stack
         <Stack.Screen 
-          name="ActivityDetail" 
-          component={ActivityDetailScreen}
-          options={{
-            headerShown: false,
-          }}
+          name="Auth" 
+          component={AuthScreen} 
+          options={{ headerShown: false }} 
         />
-        <Stack.Screen 
-          name="Chat" 
-          component={ChatScreen}
-          options={{
-            headerShown: true,
-            headerTitle: 'Group Chat',
-            headerBackTitle: 'Back',
-            headerTintColor: colors.primary,
-            headerStyle: {
-              backgroundColor: colors.card,
-              borderBottomColor: colors.border,
-              borderBottomWidth: 1,
-            },
-          }}
-        />
-        <Stack.Screen 
-          name="CreateActivity" 
-          component={CreateActivityScreen}
-          options={{
-            headerShown: true,
-            headerTitle: 'Create Activity',
-            headerBackTitle: 'Back',
-            headerTintColor: colors.primary,
-            headerStyle: {
-              backgroundColor: colors.card,
-              borderBottomColor: colors.border,
-              borderBottomWidth: 1,
-            },
-          }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+      )}
+    </Stack.Navigator>
   );
 };
 
