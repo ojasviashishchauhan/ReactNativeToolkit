@@ -1,14 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ActivityWithHost } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, MinusIcon, Locate, Plus, MapPin, Wind, Utensils, MapIcon, Ruler } from "lucide-react";
+import { PlusIcon, MinusIcon, Locate, MapPin, Ruler } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { GoogleMap, useJsApiLoader, Marker, Circle, InfoWindow } from '@react-google-maps/api';
 
 // Types
 type MapViewProps = {
