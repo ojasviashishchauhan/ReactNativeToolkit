@@ -7,6 +7,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { 
+  ChevronUp, 
+  ChevronDown, 
+  MapPin, 
+  Calendar, 
+  Clock, 
+  Users, 
+  Star, 
+  Info 
+} from "lucide-react";
 
 type ActivityDetailsProps = {
   activity: ActivityWithHost;
@@ -92,7 +102,11 @@ export function ActivityDetails({
         onClick={onToggle}
       >
         <div className="w-12 h-12 bg-white shadow-lg rounded-full flex items-center justify-center">
-          <i className={`fas fa-chevron-${isOpen ? 'down' : 'up'} text-gray-500`}></i>
+          {isOpen ? (
+            <ChevronDown className="text-gray-500" size={20} />
+          ) : (
+            <ChevronUp className="text-gray-500" size={20} />
+          )}
         </div>
       </div>
 
@@ -132,7 +146,7 @@ export function ActivityDetails({
               {isHost && <span className="ml-1 text-xs text-primary">(You)</span>}
             </p>
             <div className="flex items-center">
-              <i className="fas fa-star text-yellow-500 text-xs"></i>
+              <Star size={12} className="text-yellow-500 fill-yellow-500" />
               <span className="text-xs ml-1 text-gray-600">
                 {activity.host.rating?.toFixed(1) || "New"}
               </span>
@@ -143,19 +157,19 @@ export function ActivityDetails({
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-gray-50 rounded-lg p-3">
             <div className="text-gray-500 text-sm mb-1">Date & Time</div>
-            <div className="font-medium">
-              <i className="far fa-calendar-alt mr-1 text-primary"></i>
+            <div className="font-medium flex items-center">
+              <Calendar size={14} className="mr-1 text-primary" />
               {format(new Date(activity.dateTime), "MMMM d, yyyy")}
             </div>
-            <div className="font-medium">
-              <i className="far fa-clock mr-1 text-primary"></i>
+            <div className="font-medium flex items-center">
+              <Clock size={14} className="mr-1 text-primary" />
               {format(new Date(activity.dateTime), "h:mm a")}
             </div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3">
             <div className="text-gray-500 text-sm mb-1">Participants</div>
-            <div className="font-medium">
-              <i className="fas fa-users mr-1 text-primary"></i>
+            <div className="font-medium flex items-center">
+              <Users size={14} className="mr-1 text-primary" />
               {activity.participantCount}/{activity.capacity} joined
             </div>
             <div className="flex mt-1">
@@ -177,7 +191,7 @@ export function ActivityDetails({
         <div className="mb-4">
           <h3 className="font-medium text-gray-800 mb-2">Location</h3>
           <div className="text-gray-600 flex items-start">
-            <i className="fas fa-map-marker-alt mt-1 mr-2 text-primary"></i>
+            <MapPin size={16} className="mt-1 mr-2 text-primary shrink-0" />
             <span>
               {activity.address || "Approximately " + Math.round(
                 getDistanceInKm(
@@ -190,9 +204,9 @@ export function ActivityDetails({
             </span>
           </div>
           {!isParticipant && !isHost && (
-            <div className="text-xs text-gray-500 mt-1">
-              <i className="fas fa-info-circle mr-1"></i> 
-              Exact location will be revealed after your request is approved
+            <div className="text-xs text-gray-500 mt-1 flex items-center">
+              <Info size={12} className="mr-1 shrink-0" /> 
+              <span>Exact location will be revealed after your request is approved</span>
             </div>
           )}
         </div>
