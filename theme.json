@@ -1,7 +1,7 @@
 
 {
-  "primary": "#8c6fff",
+  "primary": "#6366f1",
   "variant": "vibrant",
   "appearance": "dark",
-  "radius": 1
+  "radius": 0.75
 }
