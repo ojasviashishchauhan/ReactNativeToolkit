@@ -9,6 +9,7 @@ import { ActivityDetails } from "@/components/ui/activity-details";
 import { CreateActivityModal } from "@/components/ui/create-activity-modal";
 import { ChatModal } from "@/components/ui/chat-modal";
 import { ProfileModal } from "@/components/ui/profile-modal";
+import { Bell, Search, Activity } from "lucide-react";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -75,21 +76,23 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-gray-100 overflow-hidden">
+    <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* Sidebar (Desktop) */}
       <Sidebar user={user} />
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation Bar */}
-        <header className="bg-white shadow-sm z-10">
+        <header className="bg-background border-b border-border z-10">
           <div className="flex justify-between items-center md:justify-end p-4">
             {/* Mobile Logo */}
             <div className="flex md:hidden items-center">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <i className="fas fa-users text-white text-sm"></i>
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Activity size={20} className="text-primary" />
               </div>
-              <h1 className="text-lg font-bold text-gray-800 ml-2">Connect</h1>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent ml-2">
+                Connect
+              </h1>
             </div>
 
             {/* Search Bar */}
@@ -97,31 +100,39 @@ export default function HomePage() {
               <input 
                 type="text" 
                 placeholder="Search activities nearby..." 
-                className="py-2 px-4 pl-10 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="py-2 px-4 pl-10 bg-accent/40 border border-border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
               />
-              <i className="fas fa-search absolute left-3 text-gray-400"></i>
+              <Search size={18} className="absolute left-3 text-muted-foreground" />
             </div>
 
             {/* User Actions */}
             <div className="flex items-center space-x-3">
-              <button className="md:flex hidden items-center justify-center w-10 h-10 rounded-full text-gray-600 hover:bg-gray-100">
-                <i className="fas fa-bell"></i>
+              <button className="md:flex hidden items-center justify-center w-10 h-10 rounded-full text-muted-foreground hover:bg-accent">
+                <Bell size={20} />
               </button>
-              <button className="md:hidden flex items-center justify-center w-10 h-10 rounded-full text-gray-600 hover:bg-gray-100">
-                <i className="fas fa-search"></i>
+              <button className="md:hidden flex items-center justify-center w-10 h-10 rounded-full text-muted-foreground hover:bg-accent">
+                <Search size={20} />
               </button>
               <div className="md:hidden relative">
-                <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center cursor-pointer">
-                  <i className="fas fa-bell text-white text-sm"></i>
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer">
+                  <Bell size={16} className="text-primary-foreground" />
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">3</span>
                 </div>
               </div>
               <div className="md:hidden" onClick={() => handleViewProfile(user?.id || 0)}>
-                <img 
-                  src={user?.avatarUrl || "https://via.placeholder.com/150"} 
-                  alt="User avatar" 
-                  className="w-8 h-8 rounded-full object-cover" 
-                />
+                {user?.avatarUrl ? (
+                  <img 
+                    src={user.avatarUrl} 
+                    alt="User avatar" 
+                    className="w-9 h-9 rounded-full object-cover border border-border" 
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center border border-border">
+                    <span className="text-primary font-semibold">
+                      {user?.username.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
