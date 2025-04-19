@@ -8,8 +8,7 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["npm", "expo", "start"]
-#npx expo start
+run = ["npm", "run", "start"]
 
 [[ports]]
 localPort = 5000

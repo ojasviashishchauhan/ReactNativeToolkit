@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Connect",
-    "slug": "connect-app",
+    "slug": "connect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,16 +16,19 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.connectapp.connect",
+      "bundleIdentifier": "com.connect.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Connect needs access to your location to show you nearby activities and help you connect with local communities.",
-        "NSPhotoLibraryUsageDescription": "Connect needs access to your photo library to let you upload profile pictures and activity images.",
-        "NSCameraUsageDescription": "Connect needs access to your camera to let you take pictures for your profile and activities.",
+        "NSLocationWhenInUseUsageDescription": "Connect needs your location to show you nearby activities and display them on the map.",
+        "NSCameraUsageDescription": "Connect needs camera access to let you upload profile pictures and activity photos.",
+        "NSPhotoLibraryUsageDescription": "Connect needs access to your photo library to let you select profile pictures and activity photos.",
         "UIBackgroundModes": [
           "location",
           "fetch"
         ]
+      },
+      "config": {
+        "googleMapsApiKey": "${GOOGLE_MAPS_API_KEY}"
       }
     },
     "android": {
@@ -33,42 +36,46 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2E7CF6"
       },
-      "package": "com.connectapp.connect",
+      "package": "com.connect.app",
       "versionCode": 1,
       "permissions": [
-        "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "${GOOGLE_MAPS_API_KEY}"
+        }
+      }
     },
     "plugins": [
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Connect to use your location to show nearby activities and help you connect with local communities."
+          "locationWhenInUsePermission": "Connect needs your location to show you nearby activities and display them on the map.",
+          "locationAlwaysAndWhenInUsePermission": "Connect needs background location access to notify you about activities happening near you."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Connect needs camera access to let you upload profile pictures and activity photos."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Connect to access your photos to let you upload profile pictures and activity images.",
-          "cameraPermission": "Allow Connect to access your camera to let you take pictures for your profile and activities."
+          "photosPermission": "Connect needs access to your photo library to let you select profile pictures and activity photos."
         }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "connect-app"
       }
-    },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/your-eas-project-id",
-      "fallbackToCacheTimeout": 0
     }
   }
 }

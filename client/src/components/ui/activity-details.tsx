@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { ChevronDown, ChevronUp, Calendar, Clock, Users, MapPin, InfoIcon, Star } from "lucide-react";
 
 type ActivityDetailsProps = {
   activity: ActivityWithHost;
@@ -15,7 +14,6 @@ type ActivityDetailsProps = {
   onToggle: () => void;
   onOpenChat: (activity: ActivityWithHost) => void;
   onViewProfile: (userId: number) => void;
-  userLocation?: { lat: number; lng: number } | null;
 };
 
 export function ActivityDetails({
@@ -23,8 +21,7 @@ export function ActivityDetails({
   isOpen,
   onToggle,
   onOpenChat,
-  onViewProfile,
-  userLocation
+  onViewProfile
 }: ActivityDetailsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -81,7 +78,7 @@ export function ActivityDetails({
 
   return (
     <div 
-      className={`absolute bottom-0 left-0 right-0 bg-background border-t border-border rounded-t-2xl shadow-lg transform transition-transform duration-300 ease-in-out`}
+      className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg transform transition-transform duration-300 ease-in-out`}
       style={{ 
         height: '350px', 
         transform: isOpen ? 'translateY(0)' : 'translateY(290px)'
@@ -92,44 +89,49 @@ export function ActivityDetails({
         style={{ transform: 'translateY(-50%)' }}
         onClick={onToggle}
       >
-        <div className="w-12 h-12 bg-background border border-border shadow-lg rounded-full flex items-center justify-center">
-          {isOpen ? 
-            <ChevronDown className="text-muted-foreground" size={22} /> : 
-            <ChevronUp className="text-muted-foreground" size={22} />
-          }
+        <div className="w-12 h-12 bg-white shadow-lg rounded-full flex items-center justify-center">
+          <i className={`fas fa-chevron-${isOpen ? 'down' : 'up'} text-gray-500`}></i>
         </div>
       </div>
 
       <div className="p-6 h-full overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">{activity.title}</h2>
-          <Badge variant="outline" className="px-3 py-1 text-sm text-primary border-primary/40 font-medium">
+          <h2 className="text-xl font-semibold text-gray-800">{activity.title}</h2>
+          <Badge className={`
+            px-3 py-1 text-sm
+            ${activity.type === 'hiking' ? 'bg-blue-100 text-blue-800' :
+              activity.type === 'cycling' ? 'bg-green-100 text-green-800' :
+              activity.type === 'sports' ? 'bg-purple-100 text-purple-800' :
+              activity.type === 'food' ? 'bg-orange-100 text-orange-800' :
+              activity.type === 'arts' ? 'bg-pink-100 text-pink-800' :
+              'bg-gray-100 text-gray-800'}
+          `}>
+            <i className={`
+              fas ${activity.type === 'hiking' ? 'fa-hiking' :
+                activity.type === 'cycling' ? 'fa-bicycle' :
+                activity.type === 'sports' ? 'fa-volleyball-ball' :
+                activity.type === 'food' ? 'fa-utensils' :
+                activity.type === 'arts' ? 'fa-paint-brush' :
+                'fa-map-marker-alt'} mr-1
+            `}></i>
             {activity.type?.charAt(0).toUpperCase() + activity.type?.slice(1)}
           </Badge>
         </div>
 
-        <div className="flex items-center mb-4 cursor-pointer group" onClick={handleViewHostProfile}>
-          {activity.host.avatarUrl ? (
-            <img 
-              src={activity.host.avatarUrl} 
-              alt={`${activity.host.username}'s avatar`} 
-              className="w-10 h-10 rounded-full mr-3 object-cover border border-border" 
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-border mr-3">
-              <span className="text-primary font-semibold">
-                {activity.host.username.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
+        <div className="flex items-center mb-4 cursor-pointer" onClick={handleViewHostProfile}>
+          <img 
+            src={activity.host.avatarUrl || "https://via.placeholder.com/100"} 
+            alt={`${activity.host.username}'s avatar`} 
+            className="w-10 h-10 rounded-full mr-3 object-cover" 
+          />
           <div>
-            <p className="font-medium text-foreground group-hover:text-primary transition-colors">
+            <p className="font-medium text-gray-800">
               Hosted by <span>{activity.host.username}</span>
               {isHost && <span className="ml-1 text-xs text-primary">(You)</span>}
             </p>
             <div className="flex items-center">
-              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-              <span className="text-xs ml-1 text-muted-foreground">
+              <i className="fas fa-star text-yellow-500 text-xs"></i>
+              <span className="text-xs ml-1 text-gray-600">
                 {activity.host.rating?.toFixed(1) || "New"}
               </span>
             </div>
@@ -137,26 +139,26 @@ export function ActivityDetails({
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-accent/40 rounded-lg p-3 border border-border">
-            <div className="text-muted-foreground text-sm mb-1">Date & Time</div>
-            <div className="font-medium text-foreground flex items-center">
-              <Calendar className="h-4 w-4 mr-1 text-primary" />
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-gray-500 text-sm mb-1">Date & Time</div>
+            <div className="font-medium">
+              <i className="far fa-calendar-alt mr-1 text-primary"></i>
               {format(new Date(activity.dateTime), "MMMM d, yyyy")}
             </div>
-            <div className="font-medium text-foreground flex items-center mt-1">
-              <Clock className="h-4 w-4 mr-1 text-primary" />
+            <div className="font-medium">
+              <i className="far fa-clock mr-1 text-primary"></i>
               {format(new Date(activity.dateTime), "h:mm a")}
             </div>
           </div>
-          <div className="bg-accent/40 rounded-lg p-3 border border-border">
-            <div className="text-muted-foreground text-sm mb-1">Participants</div>
-            <div className="font-medium text-foreground flex items-center">
-              <Users className="h-4 w-4 mr-1 text-primary" />
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-gray-500 text-sm mb-1">Participants</div>
+            <div className="font-medium">
+              <i className="fas fa-users mr-1 text-primary"></i>
               {activity.participantCount}/{activity.capacity} joined
             </div>
             <div className="flex mt-1">
               {/* Participant avatars would go here */}
-              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs text-primary border border-border">
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500 border border-white">
                 {activity.participantCount}
               </div>
             </div>
@@ -164,34 +166,30 @@ export function ActivityDetails({
         </div>
 
         <div className="mb-4">
-          <h3 className="font-medium text-foreground mb-2">About This Activity</h3>
-          <p className="text-muted-foreground">
+          <h3 className="font-medium text-gray-800 mb-2">About This Activity</h3>
+          <p className="text-gray-600">
             {activity.description}
           </p>
         </div>
 
         <div className="mb-4">
-          <h3 className="font-medium text-foreground mb-2">Location</h3>
-          <div className="text-muted-foreground flex items-start">
-            <MapPin className="h-4 w-4 mt-1 mr-2 text-primary" />
+          <h3 className="font-medium text-gray-800 mb-2">Location</h3>
+          <div className="text-gray-600 flex items-start">
+            <i className="fas fa-map-marker-alt mt-1 mr-2 text-primary"></i>
             <span>
-              {activity.address || 
-                (userLocation ? 
-                  `Approximately ${Math.round(
-                    getDistanceInKm(
-                      userLocation.lat,
-                      userLocation.lng,
-                      activity.latitude, 
-                      activity.longitude
-                    )
-                  )} km from your location` : 
-                  "Location will be shared when you join")
-              }
+              {activity.address || "Approximately " + Math.round(
+                getDistanceInKm(
+                  user?.latitude || 0, 
+                  user?.longitude || 0, 
+                  activity.latitude, 
+                  activity.longitude
+                )
+              ) + "km from your location"}
             </span>
           </div>
           {!isParticipant && !isHost && (
-            <div className="flex items-center text-xs text-muted-foreground mt-2 ml-6">
-              <InfoIcon className="h-3 w-3 mr-1" /> 
+            <div className="text-xs text-gray-500 mt-1">
+              <i className="fas fa-info-circle mr-1"></i> 
               Exact location will be revealed after your request is approved
             </div>
           )}
