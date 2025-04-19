@@ -171,18 +171,16 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-5xl grid md:grid-cols-2 gap-8 items-center">
         {/* Left side: Auth forms */}
-        <Card className="w-full shadow-lg border-border bg-background/50 backdrop-blur-sm">
+        <Card className="w-full shadow-sm">
           <CardHeader className="space-y-2 text-center">
-            <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-r from-primary to-indigo-400 flex items-center justify-center mb-2">
-              <FaUsers className="text-primary-foreground text-2xl" />
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-2">
+              <FaUsers className="text-white text-2xl" />
             </div>
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent">
-              Welcome to Connect
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">Discover and join local activities around you</CardDescription>
+            <CardTitle className="text-2xl font-bold">Welcome to Connect</CardTitle>
+            <CardDescription>Discover and join local activities around you</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
@@ -246,7 +244,7 @@ export default function AuthPage() {
 
                     <Button 
                       type="submit" 
-                      className="w-full bg-gradient-to-r from-primary to-indigo-400 hover:opacity-90 text-white border-0"
+                      className="w-full"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
@@ -369,7 +367,7 @@ export default function AuthPage() {
 
                     <Button 
                       type="submit" 
-                      className="w-full bg-gradient-to-r from-primary to-indigo-400 hover:opacity-90 text-white border-0"
+                      className="w-full"
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
@@ -399,18 +397,18 @@ export default function AuthPage() {
               <Button 
                 variant="outline" 
                 type="button" 
-                className="w-full space-x-2 bg-background border-border text-foreground hover:bg-accent hover:text-foreground"
+                className="w-full space-x-2"
                 onClick={handleGoogleSignIn}
                 disabled={isGoogleAuthPending || registerMutation.isPending || loginMutation.isPending}
               >
                 {isGoogleAuthPending ? (
                   <span className="flex items-center justify-center">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> 
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
                     <span>Signing in...</span>
                   </span>
                 ) : (
                   <>
-                    <FaGoogle className="text-red-500 h-5 w-5" />
+                    <FaGoogle className="text-red-500 mr-2" />
                     <span>Continue with Google</span>
                   </>
                 )}
@@ -421,48 +419,42 @@ export default function AuthPage() {
 
         {/* Right side: Hero/Promo */}
         <div className="hidden md:flex flex-col items-start">
-          <h1 className="text-4xl font-bold text-foreground mb-2 bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent">
-            Connect with Local Activities
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">Connect with Local Activities</h1>
+          <p className="text-xl text-gray-600 mb-6">
             Join a community of like-minded individuals, participate in activities you love, and create unforgettable experiences.
           </p>
-          <ul className="space-y-6">
+          <ul className="space-y-4">
             <li className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
-              <span className="text-lg text-foreground">Discover activities happening around you</span>
+              <span className="text-gray-700">Discover activities happening around you</span>
             </li>
             <li className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
-              <span className="text-lg text-foreground">Create and host your own activities</span>
+              <span className="text-gray-700">Create and host your own activities</span>
             </li>
             <li className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
-              <span className="text-lg text-foreground">Chat with participants in real-time</span>
+              <span className="text-gray-700">Chat with participants in real-time</span>
             </li>
             <li className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
-              <span className="text-lg text-foreground">Build trust with reviews and ratings</span>
+              <span className="text-gray-700">Build trust with reviews and ratings</span>
             </li>
           </ul>
         </div>
