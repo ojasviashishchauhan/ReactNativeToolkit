@@ -42,13 +42,13 @@ const getActivityIconUrl = (type: string) => {
 
 // Activity type to color mapping for filter buttons
 const activityTypeColors = {
-  all: 'bg-gray-700',
-  hiking: 'bg-green-600',
-  cycling: 'bg-blue-600',
-  sports: 'bg-purple-600',
-  food: 'bg-orange-600',
-  arts: 'bg-pink-600',
-  other: 'bg-gray-600'
+  all: 'from-primary to-indigo-400',
+  hiking: 'from-emerald-400 to-green-500',
+  cycling: 'from-blue-400 to-blue-600',
+  sports: 'from-violet-400 to-purple-600',
+  food: 'from-amber-400 to-orange-500',
+  arts: 'from-pink-400 to-pink-600',
+  other: 'from-gray-400 to-gray-600'
 };
 
 function FilterButton({ 
@@ -63,14 +63,15 @@ function FilterButton({
   active: boolean; 
   onClick: () => void 
 }) {
-  const bgColor = active ? activityTypeColors[type] : 'bg-white';
-  const textColor = active ? 'text-white' : 'text-gray-700';
-  
   return (
     <Button
       variant={active ? "default" : "outline"}
       size="sm"
-      className={`${bgColor} ${textColor} px-3 py-1 rounded-full shadow-sm hover:opacity-90 transition-all`}
+      className={`px-3 py-1 rounded-full shadow-sm hover:opacity-90 transition-all ${
+        active 
+          ? `bg-gradient-to-r ${activityTypeColors[type]} text-white font-medium border-0` 
+          : 'bg-background text-muted-foreground border border-border hover:text-foreground'
+      }`}
       onClick={onClick}
     >
       {label}
@@ -196,13 +197,13 @@ export function GoogleMapView({
   // Show error if there's no API key
   if (!googleMapsApiKey) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-gray-100">
+      <div className="flex items-center justify-center h-full w-full bg-background">
         <div className="text-center p-4">
-          <h3 className="text-lg font-bold text-red-600">Google Maps API Key Missing</h3>
-          <p className="text-gray-600 mt-2 mb-4">
+          <h3 className="text-lg font-bold text-destructive">Google Maps API Key Missing</h3>
+          <p className="text-muted-foreground mt-2 mb-4">
             Please provide a valid Google Maps API key in your environment variables.
           </p>
-          <div className="text-sm text-gray-500 p-2 bg-gray-100 rounded border border-gray-300 mt-2 text-left">
+          <div className="text-sm text-muted-foreground p-3 bg-accent rounded-md border border-border mt-2 text-left">
             <p className="font-mono">VITE_GOOGLE_MAPS_API_KEY=your_api_key_here</p>
           </div>
         </div>
@@ -213,10 +214,10 @@ export function GoogleMapView({
   // Show error if map fails to load
   if (loadError) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-gray-100">
-        <div className="text-center">
-          <h3 className="text-lg font-bold text-red-600">Error loading map</h3>
-          <p className="text-gray-600">Please check your Google Maps API key or try again later</p>
+      <div className="flex items-center justify-center h-full w-full bg-background">
+        <div className="text-center p-4">
+          <h3 className="text-lg font-bold text-destructive">Error loading map</h3>
+          <p className="text-muted-foreground mt-2">Please check your Google Maps API key or try again later</p>
         </div>
       </div>
     );
@@ -225,9 +226,10 @@ export function GoogleMapView({
   // Show loading state while map loads
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-gray-100">
-        <div className="text-center">
-          <h3 className="text-lg font-bold">Loading map...</h3>
+      <div className="flex items-center justify-center h-full w-full bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          <h3 className="text-lg font-medium text-foreground">Loading map...</h3>
         </div>
       </div>
     );
@@ -280,11 +282,13 @@ export function GoogleMapView({
             position={{ lat: selectedActivity.latitude, lng: selectedActivity.longitude }}
             onCloseClick={handleInfoWindowClose}
           >
-            <div className="p-2 max-w-[200px]">
-              <h3 className="font-bold text-sm">{selectedActivity.title}</h3>
-              <p className="text-xs text-gray-600 mb-1">
-                Hosted by {selectedActivity.host.username}
-              </p>
+            <div className="p-3 max-w-[220px]">
+              <h3 className="font-bold text-sm mb-1">{selectedActivity.title}</h3>
+              <div className="flex items-center gap-1 mb-2">
+                <span className="text-xs text-gray-600">
+                  Hosted by <span className="text-primary font-medium">{selectedActivity.host.username}</span>
+                </span>
+              </div>
               <Button 
                 size="sm" 
                 className="w-full mt-1 text-xs"
@@ -311,25 +315,25 @@ export function GoogleMapView({
       {/* Map Controls - moved to bottom left */}
       <div className="absolute left-4 bottom-20 flex space-x-2 z-[1000]">
         <Button
-          variant="default"
+          variant="outline"
           size="icon"
-          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-background border-border text-foreground hover:bg-accent shadow-md"
           onClick={handleZoomIn}
         >
           <PlusIcon className="h-6 w-6" />
         </Button>
         <Button
-          variant="default"
+          variant="outline"
           size="icon"
-          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-background border-border text-foreground hover:bg-accent shadow-md"
           onClick={handleZoomOut}
         >
           <MinusIcon className="h-6 w-6" />
         </Button>
         <Button
-          variant="default"
+          variant="outline"
           size="icon"
-          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-background border-border text-foreground hover:bg-accent shadow-md"
           onClick={handleLocateUser}
         >
           <Locate className="h-6 w-6" />
@@ -386,11 +390,11 @@ export function GoogleMapView({
 
       {/* Create Activity Button */}
       <Button
-        className="absolute bottom-4 right-4 shadow-lg rounded-full"
+        className="absolute bottom-4 right-4 shadow-lg rounded-full bg-gradient-to-r from-primary to-indigo-400 hover:opacity-90 border-none text-white"
         size="lg"
         onClick={onCreateActivity}
       >
-        <PlusIcon className="h-5 w-5 mr-1" />
+        <PlusIcon className="h-5 w-5 mr-2" />
         Create Activity
       </Button>
     </div>

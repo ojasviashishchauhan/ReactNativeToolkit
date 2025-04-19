@@ -155,6 +155,7 @@ export default function HomePage() {
               onToggle={handleTogglePanel}
               onOpenChat={handleOpenChat}
               onViewProfile={handleViewProfile}
+              userLocation={userLocation}
             />
           )}
         </div>
