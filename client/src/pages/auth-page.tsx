@@ -171,16 +171,16 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-5xl grid md:grid-cols-2 gap-8 items-center">
         {/* Left side: Auth forms */}
-        <Card className="w-full shadow-sm">
+        <Card className="w-full shadow-lg">
           <CardHeader className="space-y-2 text-center">
             <div className="mx-auto w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-2">
               <FaUsers className="text-white text-2xl" />
             </div>
-            <CardTitle className="text-2xl font-bold">Welcome to Connect</CardTitle>
-            <CardDescription>Discover and join local activities around you</CardDescription>
+            <CardTitle className="text-2xl font-bold">Welcome to ActivityHub</CardTitle>
+            <CardDescription>Connect with people, join local activities</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
@@ -244,15 +244,10 @@ export default function AuthPage() {
 
                     <Button 
                       type="submit" 
-                      className="w-full"
+                      className="w-full" 
                       disabled={loginMutation.isPending}
                     >
-                      {loginMutation.isPending ? (
-                        <span className="flex items-center justify-center">
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          <span>Signing in...</span>
-                        </span>
-                      ) : "Sign In"}
+                      {loginMutation.isPending ? "Signing in..." : "Sign In"}
                     </Button>
                   </form>
                 </Form>
@@ -322,26 +317,15 @@ export default function AuthPage() {
                     <FormField
                       control={registerForm.control}
                       name="bio"
-                      render={({ field }) => {
-                        // Handle the case when bio is null by defaulting to empty string
-                        const safeValue = field.value ?? '';
-                        return (
-                          <FormItem>
-                            <FormLabel>Bio (Optional)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Tell us a bit about yourself" 
-                                onChange={field.onChange}
-                                onBlur={field.onBlur}
-                                name={field.name}
-                                ref={field.ref}
-                                value={safeValue} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bio (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Tell us a bit about yourself" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
 
                     <FormField
@@ -367,15 +351,10 @@ export default function AuthPage() {
 
                     <Button 
                       type="submit" 
-                      className="w-full"
+                      className="w-full" 
                       disabled={registerMutation.isPending}
                     >
-                      {registerMutation.isPending ? (
-                        <span className="flex items-center justify-center">
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          <span>Creating Account...</span>
-                        </span>
-                      ) : "Create Account"}
+                      {registerMutation.isPending ? "Creating Account..." : "Create Account"}
                     </Button>
                   </form>
                 </Form>
@@ -402,13 +381,13 @@ export default function AuthPage() {
                 disabled={isGoogleAuthPending || registerMutation.isPending || loginMutation.isPending}
               >
                 {isGoogleAuthPending ? (
-                  <span className="flex items-center justify-center">
+                  <span className="flex items-center">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
                     <span>Signing in...</span>
                   </span>
                 ) : (
                   <>
-                    <FaGoogle className="text-red-500 mr-2" />
+                    <FaGoogle className="text-red-500" />
                     <span>Continue with Google</span>
                   </>
                 )}
@@ -419,13 +398,13 @@ export default function AuthPage() {
 
         {/* Right side: Hero/Promo */}
         <div className="hidden md:flex flex-col items-start">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">Connect with Local Activities</h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">Discover Local Activities</h1>
           <p className="text-xl text-gray-600 mb-6">
             Join a community of like-minded individuals, participate in activities you love, and create unforgettable experiences.
           </p>
           <ul className="space-y-4">
             <li className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
@@ -433,7 +412,7 @@ export default function AuthPage() {
               <span className="text-gray-700">Discover activities happening around you</span>
             </li>
             <li className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
@@ -441,7 +420,7 @@ export default function AuthPage() {
               <span className="text-gray-700">Create and host your own activities</span>
             </li>
             <li className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
@@ -449,7 +428,7 @@ export default function AuthPage() {
               <span className="text-gray-700">Chat with participants in real-time</span>
             </li>
             <li className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>

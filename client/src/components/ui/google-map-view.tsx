@@ -42,13 +42,13 @@ const getActivityIconUrl = (type: string) => {
 
 // Activity type to color mapping for filter buttons
 const activityTypeColors = {
-  all: 'bg-gray-700',
-  hiking: 'bg-green-600',
-  cycling: 'bg-blue-600',
-  sports: 'bg-purple-600',
-  food: 'bg-orange-600',
-  arts: 'bg-pink-600',
-  other: 'bg-gray-600'
+  all: 'from-primary to-indigo-400',
+  hiking: 'from-emerald-400 to-green-500',
+  cycling: 'from-blue-400 to-blue-600',
+  sports: 'from-violet-400 to-purple-600',
+  food: 'from-amber-400 to-orange-500',
+  arts: 'from-pink-400 to-pink-600',
+  other: 'from-gray-400 to-gray-600'
 };
 
 function FilterButton({ 
@@ -63,14 +63,15 @@ function FilterButton({
   active: boolean; 
   onClick: () => void 
 }) {
-  const bgColor = active ? activityTypeColors[type] : 'bg-white';
-  const textColor = active ? 'text-white' : 'text-gray-700';
-  
   return (
     <Button
       variant={active ? "default" : "outline"}
       size="sm"
-      className={`${bgColor} ${textColor} px-3 py-1 rounded-full shadow-sm hover:opacity-90 transition-all`}
+      className={`px-3 py-1 rounded-full shadow-sm hover:opacity-90 transition-all ${
+        active 
+          ? `bg-gradient-to-r ${activityTypeColors[type]} text-white font-medium border-0` 
+          : 'bg-background text-muted-foreground border border-border hover:text-foreground'
+      }`}
       onClick={onClick}
     >
       {label}
@@ -314,25 +315,25 @@ export function GoogleMapView({
       {/* Map Controls - moved to bottom left */}
       <div className="absolute left-4 bottom-20 flex space-x-2 z-[1000]">
         <Button
-          variant="default"
+          variant="outline"
           size="icon"
-          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-background border-border text-foreground hover:bg-accent shadow-md"
           onClick={handleZoomIn}
         >
           <PlusIcon className="h-6 w-6" />
         </Button>
         <Button
-          variant="default"
+          variant="outline"
           size="icon"
-          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-background border-border text-foreground hover:bg-accent shadow-md"
           onClick={handleZoomOut}
         >
           <MinusIcon className="h-6 w-6" />
         </Button>
         <Button
-          variant="default"
+          variant="outline"
           size="icon"
-          className="h-12 w-12 rounded-lg bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+          className="h-12 w-12 rounded-lg bg-background border-border text-foreground hover:bg-accent shadow-md"
           onClick={handleLocateUser}
         >
           <Locate className="h-6 w-6" />
@@ -389,11 +390,11 @@ export function GoogleMapView({
 
       {/* Create Activity Button */}
       <Button
-        className="absolute bottom-4 right-4 shadow-lg rounded-full"
+        className="absolute bottom-4 right-4 shadow-lg rounded-full bg-gradient-to-r from-primary to-indigo-400 hover:opacity-90 border-none text-white"
         size="lg"
         onClick={onCreateActivity}
       >
-        <PlusIcon className="h-5 w-5 mr-1" />
+        <PlusIcon className="h-5 w-5 mr-2" />
         Create Activity
       </Button>
     </div>
