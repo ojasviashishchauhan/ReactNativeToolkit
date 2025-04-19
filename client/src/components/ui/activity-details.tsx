@@ -14,6 +14,7 @@ type ActivityDetailsProps = {
   onToggle: () => void;
   onOpenChat: (activity: ActivityWithHost) => void;
   onViewProfile: (userId: number) => void;
+  userLocation: { lat: number; lng: number } | null;
 };
 
 export function ActivityDetails({
@@ -21,7 +22,8 @@ export function ActivityDetails({
   isOpen,
   onToggle,
   onOpenChat,
-  onViewProfile
+  onViewProfile,
+  userLocation
 }: ActivityDetailsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -179,8 +181,8 @@ export function ActivityDetails({
             <span>
               {activity.address || "Approximately " + Math.round(
                 getDistanceInKm(
-                  user?.latitude || 0, 
-                  user?.longitude || 0, 
+                  userLocation?.lat || 0, 
+                  userLocation?.lng || 0, 
                   activity.latitude, 
                   activity.longitude
                 )
