@@ -109,7 +109,7 @@ export default function AuthPage() {
       setIsGoogleAuthPending(true);
       const result = await signInWithGoogle();
       const { user } = result;
-      
+
       // Register the user with our system using Firebase credentials
       if (user.email && user.displayName) {
         registerMutation.mutate({
@@ -118,7 +118,7 @@ export default function AuthPage() {
           password: Math.random().toString(36).slice(-12), // Generate a random password
           bio: `Joined via Google - ${user.displayName}`,
         });
-        
+
         toast({
           title: "Google sign-in successful",
           description: "You are now being logged in",
@@ -141,7 +141,7 @@ export default function AuthPage() {
       setIsAppleAuthPending(true);
       const result = await signInWithApple();
       const { user } = result;
-      
+
       // Register the user with our system using Apple credentials
       if (user.email) {
         registerMutation.mutate({
@@ -152,7 +152,7 @@ export default function AuthPage() {
           password: Math.random().toString(36).slice(-12), // Generate a random password
           bio: `Joined via Apple${user.displayName ? ` - ${user.displayName}` : ''}`,
         });
-        
+
         toast({
           title: "Apple sign-in successful",
           description: "You are now being logged in",
@@ -188,7 +188,7 @@ export default function AuthPage() {
                 <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="register">Create Account</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="login">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
@@ -205,7 +205,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={loginForm.control}
                       name="password"
@@ -219,7 +219,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="flex items-center justify-between">
                       <FormField
                         control={loginForm.control}
@@ -236,12 +236,12 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <a href="#" className="text-sm text-primary hover:underline">
                         Forgot password?
                       </a>
                     </div>
-                    
+
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -252,7 +252,7 @@ export default function AuthPage() {
                   </form>
                 </Form>
               </TabsContent>
-              
+
               <TabsContent value="register">
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
@@ -269,7 +269,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={registerForm.control}
                       name="email"
@@ -283,7 +283,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={registerForm.control}
@@ -298,7 +298,7 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={registerForm.control}
                         name="confirmPassword"
@@ -313,7 +313,7 @@ export default function AuthPage() {
                         )}
                       />
                     </div>
-                    
+
                     <FormField
                       control={registerForm.control}
                       name="bio"
@@ -327,7 +327,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={registerForm.control}
                       name="termsAccepted"
@@ -348,7 +348,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -372,11 +372,11 @@ export default function AuthPage() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6">
               <Button 
                 variant="outline" 
                 type="button" 
-                className="space-x-2"
+                className="w-full space-x-2"
                 onClick={handleGoogleSignIn}
                 disabled={isGoogleAuthPending || registerMutation.isPending || loginMutation.isPending}
               >
@@ -388,26 +388,7 @@ export default function AuthPage() {
                 ) : (
                   <>
                     <FaGoogle className="text-red-500" />
-                    <span>Google</span>
-                  </>
-                )}
-              </Button>
-              <Button 
-                variant="outline" 
-                type="button" 
-                className="space-x-2"
-                onClick={handleAppleSignIn}
-                disabled={isAppleAuthPending || registerMutation.isPending || loginMutation.isPending}
-              >
-                {isAppleAuthPending ? (
-                  <span className="flex items-center">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                    <span>Signing in...</span>
-                  </span>
-                ) : (
-                  <>
-                    <FaApple />
-                    <span>Apple</span>
+                    <span>Continue with Google</span>
                   </>
                 )}
               </Button>
