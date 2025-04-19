@@ -13,7 +13,6 @@ export const users = pgTable("users", {
   bio: text("bio"),
   age: integer("age"),
   sex: text("sex"),
-  logoUrl: text("logo_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
